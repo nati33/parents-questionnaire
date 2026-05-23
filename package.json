@@ -1,0 +1,15 @@
+{
+  "name": "parents-questionnaire",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Hebrew parent questionnaire app + future intervention programs platform (ages 5-10)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10"
+  }
+}

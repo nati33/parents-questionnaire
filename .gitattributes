@@ -1,0 +1,19 @@
+# Auto-detect text files with default LF endings on commit
+* text=auto eol=lf
+
+# PowerShell scripts use CRLF
+*.ps1 text eol=crlf
+
+# Binary files
+*.docx binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.zip binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary

@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>שאלון הורים — סקירה ובחירת שאלות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;800&family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-docx-js/0.3.1/html-docx.js"></script>
+<style>
+  :root {
+    --bg: #F7F3EC;
+    --bg-elev: #FDFBF6;
+    --bg-card: #FFFFFF;
+    --ink: #2A2722;
+    --ink-soft: #5A554D;
+    --ink-mute: #908778;
+    --rule: #E6DFD2;
+    --rule-soft: #EFE9DC;
+    --accent: #8B6F47;
+    --accent-soft: #C9A87C;
+    --keep: #5C8F4A;
+    --keep-bg: #EAF1E0;
+    --keep-tint: #F5F9EE;
+    --remove: #B84C3A;
+    --remove-bg: #F4DAD3;
+    --remove-tint: #FBEEEA;
+    --shadow-sm: 0 1px 2px rgba(40,30,15,0.04), 0 1px 3px rgba(40,30,15,0.03);
+    --shadow-md: 0 4px 12px rgba(40,30,15,0.06), 0 2px 4px rgba(40,30,15,0.04);
+    --shadow-lg: 0 12px 28px rgba(40,30,15,0.10), 0 4px 8px rgba(40,30,15,0.05);
+    --r: 14px;
+    --r-sm: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Heebo", -apple-system, "Segoe UI", "David", sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background-image:
+      radial-gradient(at 80% -10%, rgba(201,168,124,0.10), transparent 50%),
+      radial-gradient(at 10% 100%, rgba(122,139,107,0.07), transparent 45%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    padding-bottom: 100px;
+  }
+  .display, h1.title { font-family: "Frank Ruhl Libre", "David", serif; font-weight: 700; letter-spacing: -0.01em; }
+  button { font-family: inherit; cursor: pointer; }
+
+  /* ── Top bar ───────────────────────────────────────── */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(247,243,236,0.92);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    border-bottom: 1px solid var(--rule);
+  }
+  .topbar-inner { max-width: 1180px; margin: 0 auto; padding: 14px 28px 0 28px; }
+  .topbar-row1 {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 24px; flex-wrap: wrap; margin-bottom: 12px;
+  }
+  h1.title { font-size: clamp(22px, 2.4vw, 30px); margin: 0; color: var(--ink); }
+  .title small {
+    display: block; font-family: "Heebo", sans-serif; font-weight: 400;
+    font-size: 13px; color: var(--ink-mute); margin-top: 2px; letter-spacing: 0.02em;
+  }
+  .stats-cluster { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+  .stat { display: flex; align-items: baseline; gap: 6px; font-size: 13px; color: var(--ink-soft); }
+  .stat .num {
+    font-family: "Frank Ruhl Libre", serif; font-size: 22px; font-weight: 700;
+    color: var(--ink); line-height: 1;
+  }
+  .stat.keep .num { color: var(--keep); }
+  .stat.remove .num { color: var(--remove); }
+
+  .progress { height: 6px; background: var(--rule-soft); border-radius: 999px; overflow: hidden; position: relative; margin-bottom: 14px; }
+  .progress .bar { position: absolute; top: 0; bottom: 0; right: 0; background: linear-gradient(90deg, var(--accent-soft), var(--accent)); transition: width 0.4s ease; border-radius: 999px; }
+
+  .topbar-row2 { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding-bottom: 12px; }
+  .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    padding: 6px 14px; border-radius: 999px; border: 1px solid var(--rule);
+    background: transparent; font-size: 13px; color: var(--ink-soft);
+    transition: all 0.15s ease; font-weight: 500;
+  }
+  .chip:hover { background: var(--rule-soft); }
+  .chip.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .chip .count { margin-inline-start: 4px; font-size: 11px; opacity: 0.7; }
+
+  .spacer { flex: 1; }
+  .actions { display: flex; gap: 8px; }
+  .btn {
+    border: 1px solid var(--rule); background: var(--bg-elev); color: var(--ink);
+    padding: 8px 16px; border-radius: var(--r-sm); font-size: 13px; font-weight: 500;
+    transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { background: var(--bg-card); border-color: var(--accent-soft); box-shadow: var(--shadow-sm); }
+  .btn.primary { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  .btn.primary:hover { background: #1a1714; border-color: #1a1714; }
+  .btn.danger:hover { color: var(--remove); border-color: var(--remove); }
+
+  .section-nav { overflow-x: auto; border-top: 1px solid var(--rule-soft); padding: 10px 0; scrollbar-width: thin; }
+  .section-nav-inner { display: flex; gap: 6px; padding: 0 28px; max-width: 1180px; margin: 0 auto; }
+  .nav-pill {
+    flex-shrink: 0; padding: 6px 12px; font-size: 12px; color: var(--ink-soft);
+    border-radius: 8px; background: transparent; border: 1px solid var(--rule);
+    text-decoration: none; transition: all 0.15s ease;
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .nav-pill:hover { background: var(--bg-elev); }
+  .nav-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--rule); flex-shrink: 0; }
+  .nav-pill.partial .dot { background: var(--accent-soft); }
+  .nav-pill.complete .dot { background: var(--keep); }
+
+  /* ── Content ───────────────────────────────────────── */
+  main { max-width: 1180px; margin: 0 auto; padding: 32px 28px 60px 28px; }
+  .intro-card {
+    background: var(--bg-elev); border: 1px solid var(--rule);
+    border-inline-start: 3px solid var(--accent-soft); border-radius: var(--r);
+    padding: 18px 22px; margin-bottom: 28px; color: var(--ink-soft);
+    font-size: 14px; line-height: 1.7;
+  }
+  .intro-card strong { color: var(--ink); font-weight: 600; }
+  .intro-card .tip {
+    display: flex; align-items: flex-start; gap: 10px; margin-top: 10px;
+    padding-top: 10px; border-top: 1px dashed var(--rule); font-size: 13px;
+  }
+  .intro-card .tip-icon { font-size: 16px; flex-shrink: 0; }
+
+  /* ── Section ───────────────────────────────────────── */
+  .section { margin-bottom: 40px; scroll-margin-top: 180px; }
+  .section-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 18px; margin-bottom: 14px; flex-wrap: wrap;
+    padding-bottom: 10px; border-bottom: 1px solid var(--rule);
+  }
+  .section-title { font-family: "Frank Ruhl Libre", serif; font-size: 24px; font-weight: 700; margin: 0; color: var(--ink); }
+  .section-intro { font-size: 13px; color: var(--ink-mute); margin-top: 4px; max-width: 60ch; }
+  .section-stats { display: flex; gap: 12px; font-size: 12px; color: var(--ink-mute); align-items: center; flex-wrap: wrap; }
+  .section-stats .pill { padding: 3px 9px; border-radius: 999px; background: var(--bg-elev); border: 1px solid var(--rule); }
+  .section-stats .pill.keep { background: var(--keep-tint); border-color: #D4E2BD; color: var(--keep); }
+  .section-stats .pill.remove { background: var(--remove-tint); border-color: #E8C2B7; color: var(--remove); }
+  .bulk-actions { display: flex; gap: 6px; margin-inline-start: 8px; }
+  .bulk-btn {
+    background: transparent; border: 1px dashed var(--rule); color: var(--ink-mute);
+    font-size: 11px; padding: 3px 10px; border-radius: 6px; transition: all 0.15s ease;
+  }
+  .bulk-btn:hover { color: var(--ink); border-style: solid; border-color: var(--accent-soft); }
+
+  .subsection-title {
+    font-family: "Frank Ruhl Libre", serif; font-weight: 500; font-size: 17px;
+    color: var(--accent); margin: 24px 0 10px 0; letter-spacing: 0.01em;
+  }
+  .subsection-title::before {
+    content: ""; display: inline-block; width: 18px; height: 1px;
+    background: var(--accent-soft); vertical-align: middle; margin-inline-end: 8px;
+  }
+
+  /* ── Question card ─────────────────────────────────── */
+  .questions { display: flex; flex-direction: column; gap: 10px; }
+  .q {
+    background: var(--bg-card); border: 1px solid var(--rule); border-radius: var(--r);
+    padding: 16px 18px; box-shadow: var(--shadow-sm); transition: all 0.2s ease; position: relative;
+  }
+  .q:hover { box-shadow: var(--shadow-md); }
+  .q.keep { background: var(--keep-tint); border-color: #C8DAB1; }
+  .q.remove { background: var(--remove-tint); border-color: #E8BFB3; }
+  .q.remove .q-text { color: var(--ink-mute); text-decoration: line-through; text-decoration-color: rgba(184,76,58,0.4); }
+  .q.hidden { display: none; }
+
+  .q-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+  .q-body { flex: 1; min-width: 0; }
+  .q-num {
+    display: inline-block; font-family: "Frank Ruhl Libre", serif; font-size: 13px;
+    color: var(--ink-mute); background: var(--bg-elev); border: 1px solid var(--rule);
+    border-radius: 6px; padding: 1px 7px; margin-inline-end: 8px; min-width: 28px; text-align: center;
+  }
+  .q-type-badge {
+    display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--ink-mute); background: var(--rule-soft); padding: 2px 6px;
+    border-radius: 4px; margin-inline-end: 6px; vertical-align: 2px;
+  }
+  .q-text { font-size: 15px; color: var(--ink); line-height: 1.55; display: inline; }
+  .q-preview { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--rule); }
+
+  /* Likert visualization */
+  .likert-wrap { display: flex; flex-direction: column; gap: 2px; max-width: 320px; }
+  .likert-row { display: flex; align-items: center; gap: 8px; }
+  .likert-end { font-size: 11px; color: var(--ink-mute); min-width: 50px; }
+  .likert-scale { display: flex; gap: 4px; }
+  .likert-scale .lk {
+    width: 26px; height: 26px; border: 1px solid var(--rule); border-radius: 50%;
+    background: var(--bg-elev); display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--ink-soft); font-family: "Frank Ruhl Libre", serif;
+  }
+
+  /* Checkbox preview */
+  .checkbox-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .checkbox-opts .opt {
+    padding: 4px 10px; background: var(--bg-elev); border: 1px solid var(--rule);
+    border-radius: 999px; font-size: 12px; color: var(--ink-soft);
+  }
+  .checkbox-opts .opt::before { content: "☐ "; color: var(--ink-mute); }
+
+  /* Open text preview */
+  .open-line { height: 1px; background: var(--rule); margin: 8px 0 0 0; }
+  .open-line.long { height: 60px; background: transparent; border: 1px dashed var(--rule); border-radius: 6px; }
+  .open-hint { font-size: 11px; color: var(--ink-mute); margin-top: 4px; font-style: italic; }
+
+  /* Decision controls */
+  .q-controls { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+  .ctrl-btn {
+    width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--rule);
+    background: var(--bg-elev); display: flex; align-items: center; justify-content: center;
+    font-size: 17px; transition: all 0.15s ease; color: var(--ink-mute);
+  }
+  .ctrl-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+  .ctrl-btn.keep:hover { color: var(--keep); border-color: var(--keep); }
+  .ctrl-btn.remove:hover { color: var(--remove); border-color: var(--remove); }
+  .q.keep .ctrl-btn.keep { background: var(--keep); color: white; border-color: var(--keep); }
+  .q.remove .ctrl-btn.remove { background: var(--remove); color: white; border-color: var(--remove); }
+
+  .note-toggle {
+    margin-top: 10px; background: transparent; border: none;
+    color: var(--ink-mute); font-size: 12px; cursor: pointer; padding: 0;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .note-toggle:hover { color: var(--accent); }
+  .note-area {
+    margin-top: 8px; width: 100%; background: var(--bg-elev); border: 1px solid var(--rule);
+    border-radius: 8px; padding: 8px 12px; font-family: inherit; font-size: 13px;
+    color: var(--ink); resize: vertical; min-height: 50px;
+  }
+  .note-area:focus { outline: none; border-color: var(--accent-soft); }
+  .note-area.hidden { display: none; }
+
+  /* Save strip */
+  .save-strip {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: var(--bg); padding: 12px 22px; border-radius: 14px;
+    box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 16px;
+    font-size: 13px; z-index: 40; opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .save-strip.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(-2px); }
+  .save-strip .summary { opacity: 0.85; }
+  .save-strip .summary strong { color: #C9A87C; }
+  .save-strip .btn { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.15); color: var(--bg); }
+  .save-strip .btn:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.30); }
+  .save-strip .btn.primary { background: var(--accent-soft); color: #2A1F10; border-color: var(--accent-soft); font-weight: 600; }
+  .save-strip .btn.primary:hover { background: #D6B68A; border-color: #D6B68A; }
+
+  .toast {
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%) translateY(-20px);
+    background: var(--ink); color: var(--bg); padding: 12px 22px; border-radius: 10px;
+    box-shadow: var(--shadow-lg); font-size: 14px; z-index: 100;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .empty {
+    text-align: center; padding: 40px; color: var(--ink-mute); font-style: italic;
+    background: var(--bg-elev); border: 1px dashed var(--rule); border-radius: var(--r);
+  }
+  .empty.hidden { display: none; }
+
+  @media (max-width: 700px) {
+    .topbar-inner { padding: 12px 16px 0 16px; }
+    main { padding: 24px 16px 60px 16px; }
+    h1.title { font-size: 20px; }
+    .q-top { flex-direction: column; gap: 12px; }
+    .q-controls { flex-direction: row; align-self: flex-end; }
+    .ctrl-btn { width: 44px; height: 44px; }
+    .section-nav-inner { padding: 0 16px; }
+    .save-strip { left: 12px; right: 12px; transform: none; flex-wrap: wrap; justify-content: center; }
+    .save-strip.show { transform: translateY(-2px); }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-row1">
+      <h1 class="title">
+        שאלון הורים — סקירה ובחירת שאלות
+        <small>גילאי 5–10 · גרסה 4 · 125 שאלות לסקירה</small>
+      </h1>
+      <div class="stats-cluster">
+        <div class="stat"><span class="num" id="stat-reviewed">0</span><span>נסקרו</span></div>
+        <div class="stat keep"><span class="num" id="stat-keep">0</span><span>להשארה</span></div>
+        <div class="stat remove"><span class="num" id="stat-remove">0</span><span>להסרה</span></div>
+        <div class="stat"><span class="num" id="stat-total">0</span><span>סה״כ</span></div>
+      </div>
+    </div>
+    <div class="progress"><div class="bar" id="prog-bar" style="width:0%"></div></div>
+    <div class="topbar-row2">
+      <div class="filter-chips">
+        <button class="chip active" data-filter="all">הכל <span class="count" id="cnt-all"></span></button>
+        <button class="chip" data-filter="unmarked">לא סומנו <span class="count" id="cnt-unmarked"></span></button>
+        <button class="chip" data-filter="keep">להשארה <span class="count" id="cnt-keep"></span></button>
+        <button class="chip" data-filter="remove">להסרה <span class="count" id="cnt-remove"></span></button>
+      </div>
+      <div class="spacer"></div>
+      <div class="actions">
+        <button class="btn danger" id="btn-reset" title="איפוס כל הסימונים">איפוס</button>
+        <button class="btn" id="btn-export-json">שמור משוב (JSON)</button>
+        <button class="btn primary" id="btn-export-doc">💾 שמור שאלון מותאם</button>
+      </div>
+    </div>
+  </div>
+  <nav class="section-nav"><div class="section-nav-inner" id="section-nav"></div></nav>
+</header>
+
+<main>
+  <div class="intro-card">
+    <div><strong>איך זה עובד.</strong> עוברים על השאלות חלק־חלק וסומנים לכל שאלה אם <strong style="color:var(--keep);">להשאיר</strong> אותה (✓) או <strong style="color:var(--remove);">להסיר</strong> אותה (✗). אפשר להוסיף הערה קצרה לכל שאלה. בסיום — לחיצה על <em>״שמור שאלון מותאם״</em> תייצר מסמך Word שכולל רק את השאלות שבחרתם להשאיר.</div>
+    <div class="tip">
+      <span class="tip-icon">💡</span>
+      <div>שאלות לא־מסומנות לא נכללות בקובץ המיוצא. הסימונים נשמרים אוטומטית בדפדפן. לקיצורי מקלדת: <kbd>j</kbd>/<kbd>k</kbd> ניווט בין שאלות.</div>
+    </div>
+  </div>
+  <div id="content"></div>
+  <div class="empty hidden" id="empty">אין שאלות שתואמות לסינון הזה.</div>
+</main>
+
+<div class="save-strip" id="save-strip">
+  <span class="summary"><strong id="strip-count">0</strong> שאלות יישמרו בקובץ החדש</span>
+  <button class="btn primary" onclick="exportDoc()">💾 שמור שאלון מותאם</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = [{"title":"חלק א׳ — רקע ופרטים כלליים","intro":"זה חלק קצר של פרטי רקע. לא כל השאלות חובה — דלגו על מה שלא רלוונטי או שאינכם רוצים לשתף.","subsections":[{"title":"הילד/ה","questions":[{"type":"open_short","label":"גיל"},{"type":"checkbox","label":"מין","options":["בן","בת","אחר/מעדיף/ה לא לציין"]},{"type":"checkbox","label":"מיקום במשפחה","options":["בכור/ה","אמצעי/ת","צעיר/ה","יחיד/ה"]},{"type":"open_short","label":"מספר אחים/אחיות וגילאיהם"},{"type":"checkbox","label":"סוג מסגרת חינוכית","options":["ממלכתי","ממלכתי דתי","חרדי","דמוקרטי","אנתרופוסופי","אחר"]},{"type":"open_short","label":"כיתה / גן"}]},{"title":"הורים ומבנה משפחתי","questions":[{"type":"checkbox","label":"מצב משפחתי","options":["נשואים","פרודים","גרושים","בהליך גירושין","אלמנ/ה","חד-הורי/ת","אחר"]},{"type":"open_short","label":"דמויות התקשרות משמעותיות נוספות (סבים, מטפלת, קרוב משפחה)"},{"type":"checkbox","label":"הערכה כללית של מצב סוציו־אקונומי","options":["נמוך","בינוני נמוך","בינוני","בינוני גבוה","גבוה"]}]},{"title":"רקע קליני וחברתי","questions":[{"type":"open_short","label":"האם יש אבחון קליני (ADHD, חרדה, ספקטרום וכד׳)? אם כן — איזה?"},{"type":"open_short","label":"האם יש לקות למידה ידועה? איזו?"},{"type":"open_short","label":"טיפול נוכחי או בעבר (אבחון, יעוץ, תרפיה — אם רלוונטי)"},{"type":"open_short","label":"האם היה אירוע חברתי משמעותי (חרם, אלימות, טראומה) — תיאור קצר"},{"type":"open_short","label":"חוגים, ספורט ופעילויות שהילד/ה משתתף/ת בהן"}]}],"questions":[]},{"title":"חלק ב׳ — אקלים משפחתי ויחסים בבית","intro":"השאלות הבאות נוגעות לאיך שהבית מתנהל ואיך הילד/ה חווה אותו.","subsections":[],"questions":[{"type":"likert","number":1,"text":"ההורים נוכחים פיזית בבית באופן יומיומי או לפחות אחד מההורים"},{"type":"likert","number":2,"text":"לתחושתכם יש להורים או לפחות לאחד מהם יציבות מנטלית בזמן קונפליקטים או חוויות מאתגרות שהילד/ה חווה"},{"type":"likert","number":3,"text":"אנחנו חווים קונפליקטים גלויים בין ההורים בבית"},{"type":"likert","number":4,"text":"יחסי הילד/ה עם האחים והאחיות חמים וקרובים"},{"type":"likert","number":5,"text":"יש מריבות תכופות בין הילד/ה לאחים"},{"type":"likert","number":6,"text":"הילד/ה מבטא/ת קרבה מיוחדת לאחד ההורים"},{"type":"likert","number":7,"text":"הילד/ה מתקשה רגשית כשההורה המועדף לא בקרבת מקום"},{"type":"likert","number":8,"text":"אנחנו משתמשים בענישה פיזית (סטירה, משיכה, החזקה בכוח)"},{"type":"likert","number":9,"text":"אנחנו משתמשים בענישה רגשית (התעלמות, איום בנטישה, ביטול הרגשות של הילד/ה ע\"י הכחשה)"},{"type":"likert","number":10,"text":"אנחנו מרימים קול או צועקים על הילד/ה"},{"type":"likert","number":11,"text":"יש בבית כללי התנהגות ברורים שהילד/ה מכיר/ה"},{"type":"likert","number":12,"text":"הילד/ה מקבל/ת תשומת לב חיובית לעיתים קרובות (חיבוק, מילה טובה, זמן איכות)"},{"type":"likert","number":13,"text":"כשהילד/ה אומר/ת שנפגע/ת ממני, אני מכחיש/ה / מבטל/ת את הרגש / מחזיר/ה אליו/ה אשמה או מאשים/ה אותו/ה שזה בגללו/ה"},{"type":"likert","number":14,"text":"כשאני אומר/ת ״לא״ — אני מצליח/ה לעמוד בזה גם תחת לחץ"},{"type":"likert","number":15,"text":"ההורים בבית עקביים בגבולות (אין הבדל בין יום ליום)"},{"type":"likert","number":16,"text":"יש פער בולט בין שני ההורים — אחד מציב גבולות והשני מרכך"},{"type":"likert","number":17,"text":"אני נכנע/ת בסוף לבקשות חוזרות או התקפי בכי של הילד/ה"},{"type":"likert","number":18,"text":"כשאמרנו שיקרה משהו (תוצאה / גמול / עונש) — אנחנו בפועל מבצעים זאת"}]},{"title":"חלק ג׳ — ויסות רגשי והבעת רגשות","intro":"","subsections":[],"questions":[{"type":"likert","number":19,"text":"הילד/ה מתפרץ/ת בכעס עז כשאומרים לו/ה ״לא״"},{"type":"likert","number":20,"text":"הילד/ה מתקשה לחכות בסבלנות"},{"type":"likert","number":21,"text":"כשהילד/ה מוצף/ת רגשית — לוקח לו/ה הרבה זמן להתאושש"},{"type":"likert","number":22,"text":"הילד/ה חווה התקפי בכי או זעם בלתי נשלטים"},{"type":"likert","number":23,"text":"הילד/ה מתקשה לעבור בין מצבים רגשיים שונים (מנוקשות לגמישות / מכעס לשיח / מהאשמה למציאת פתרון)"},{"type":"likert","number":24,"text":"הילד/ה יודע/ת להסביר במילים מה הוא/היא מרגיש/ה (מכיר מה הוא חווה ובחוויה עצמה, לא רק במילים של שמחה / כעס / עצב אלא תיאור של חוויה)"},{"type":"likert","number":25,"text":"הילד/ה מתלונן/ת על חוסר שייכות או דחייה (״אף אחד לא רוצה אותי״, ״אני לבד״)"},{"type":"likert","number":26,"text":"הילד/ה נמנע/ת משיחה על רגשות עם ההורים (מתחמק או מרגיש שמבקרים אותו)"},{"type":"likert","number":27,"text":"הילד/ה מתקשה לבטא את עצמו בביטוי מילולי או להציב גבולות מול חבר/ה"},{"type":"likert","number":28,"text":"הילד/ה מבטא/ת רגישות וחמלה כלפי אחרים שמתקשים"},{"type":"likert","number":29,"text":"בזמן שהילד/ה עצמו/ה במצוקה — הוא אינו מתחשב בסביבה בכלל"},{"type":"likert","number":30,"text":"הילד/ה ממשיך/ה כרגיל גם כשמישהו לידו מתקשה (בלי להבחין/להגיב)"},{"type":"likert","number":31,"text":"לפי תחושתכם, כשהילד/ה מתעלם/ת ממצוקה של אחר, זה נובע בעיקר ממבוכה או חוסר נוחות חברתית"},{"type":"likert","number":32,"text":"לפי תחושתכם, כשהילד/ה מתעלם/ת ממצוקה של אחר, זה נובע בעיקר מחוסר הבנה של הסיטואציה"},{"type":"likert","number":33,"text":"הילד/ה משתמש/ת בהגדרות ״ילד טוב״ / ״ילד רע״ כדי לתאר את עצמו/ה או אחרים"}]},{"title":"חלק ד׳ — חברה ויחסים בין-אישיים","intro":"","subsections":[],"questions":[{"type":"likert","number":34,"text":"הילד/ה יוזם/ת בעצמו/ה פגישות עם חברים"},{"type":"likert","number":35,"text":"הילד/ה אוהב/ת לארח חברים בבית"},{"type":"likert","number":36,"text":"הילד/ה מגן/ה על ה״טריטוריה״ שלו/ה (חפצים, מקום, חדר) גם בנוכחות חברים"},{"type":"likert","number":37,"text":"הילד/ה מבין/ה היטב סיטואציות חברתיות (מבחין/ה מתי מישהו עצוב, מתבדח, רציני)"},{"type":"likert","number":38,"text":"הילד/ה מתקשה לפרגן או להחמיא לחברים"},{"type":"likert","number":39,"text":"הילד/ה מתקשה לקבל מחמאה או פרגון (מתעלם, מגיב בכעס או מתכחש)"},{"type":"likert","number":40,"text":"הילד/ה מבטא/ת קנאה כלפי הצלחות של חברים"},{"type":"likert","number":41,"text":"הילד/ה משתמש/ת בשפה פוגענית כלפי חברים (קללות, הקטנה של האחר, דחייה)"},{"type":"likert","number":42,"text":"הילד/ה משתמש/ת בשפה פוגענית כלפי בני משפחה"},{"type":"likert","number":43,"text":"הילד/ה מסתבך/ת באלימות פיזית עם ילדים אחרים"},{"type":"likert","number":44,"text":"הילד/ה מגן/ה בעוצמה על המקום/הטריטוריה שלו/ה בבית (חדר, כיסא, חפצים)"},{"type":"likert","number":45,"text":"הילד/ה זקוק/ה לתחושה ש״רואים אותו/ה״ — מכירים בנוכחותו/ה ובמקומו/ה במשפחה והוא משקיע המון אנרגיה לטובת קבלת התחושה"},{"type":"likert","number":46,"text":"הילד/ה נמנע/ת מהמסגרת החינוכית או רוצה לברוח ממנה"},{"type":"likert","number":47,"text":"יש מאבק יומיומי על היציאה למסגרת החינוכית (קושי קבוע, לא חד-פעמי)"},{"type":"likert","number":48,"text":"אנו מבזבזים יותר מחצי שעה ביום לשכנע את הילד/ה ללכת למסגרת"},{"type":"likert","number":49,"text":"קיבלנו פניות מהמסגרת על קללות, אלימות מצד הילד/ה"},{"type":"likert","number":50,"text":"קיבלנו פניות מהמסגרת על קללות או אלימות — כלפי הילד/ה (מצד ילדים אחרים או צוות)"},{"type":"likert","number":51,"text":"קיבלנו פניות מהמסגרת על חרם או הדרה חברתית — כלפי הילד/ה"},{"type":"likert","number":52,"text":"קיבלנו פניות מהמסגרת על חרם או הדרה חברתית — מצד הילד/ה (הילד/ה מחרים/ה או מדיר/ה ילדים אחרים)"},{"type":"likert","number":53,"text":"הילד/ה רוצה לקחת חלק בפעילויות חברתיות וקבוצתיות"}]},{"title":"חלק ה׳ — סמכות, גבולות וצורך בשליטה","intro":"","subsections":[],"questions":[{"type":"likert","number":54,"text":"הילד/ה מתנגד/ת פיזית לבקשות יומיומיות (להתלבש, לצאת מהבית, לאכול)"},{"type":"likert","number":55,"text":"ההתנגדות הפיזית מתעצמת בתקופות של עומס רגשי"},{"type":"likert","number":56,"text":"הילד/ה מתחצף/ת להורים"},{"type":"likert","number":57,"text":"יש פער בולט בין התנהגות הילד/ה במסגרת לבין הבית"},{"type":"likert","number":58,"text":"הילד/ה זקוק/ה לדעת מראש מה הולך לקרות (לאן הולכים, מתי, עם מי)"},{"type":"likert","number":59,"text":"כשתכניות משתנות ללא הכנה מראש, הילד/ה מתפרץ/ת או מתפרק/ת רגשית"},{"type":"likert","number":60,"text":"כשאין לנו תשובה ודאית למשהו, הילד/ה נכנס/ת ל״לופ״ של שאלות חוזרות שניכר שמטריד/ות אותו/ה"},{"type":"likert","number":61,"text":"הילד/ה זקוק/ה לתשומת לב מתמדת"},{"type":"likert","number":62,"text":"הילד/ה צריך/ה לשלוט במרחב או בסיטואציה"},{"type":"likert","number":63,"text":"הילד/ה נמצא/ת בתנועה מתמדת — קשה לו/ה לשבת במקום (זז/ה, קופץ/ת, רץ/ה)"},{"type":"likert","number":64,"text":"הילד/ה זקוק/ה לתחושת מגע חזקה — נצמד/ת, נוגע/ת, מחבק/ת או דוחף/ת לעיתים תכופות"},{"type":"likert","number":65,"text":"הילד/ה מגיב/ה בעוצמה לגירויים סנסוריים (רעש, ריחות, מגע, אור)"},{"type":"likert","number":66,"text":"הילד/ה מתקשה לעצור פעולה שהתחיל/ה גם כשמבקשים ממנו/ה"}]},{"title":"חלק ו׳ — גמישות, חשיבה וקבלת החלטות","intro":"","subsections":[],"questions":[{"type":"likert","number":67,"text":"הילד/ה מגלה גמישות מחשבתית כשדברים לא הולכים כמתוכנן (פתרונות יצירתיים)"},{"type":"likert","number":68,"text":"הילד/ה מתקשה בקבלת החלטות (מתבלבל/ת, נמנע/ת, נאלם/ת)"},{"type":"likert","number":69,"text":"הילד/ה תופס/ת את עצמו/ה כקורבן בסיטואציות (״לא הוגן שזה קורה לי״, ״תמיד אני זה שמקבל/ת״)"},{"type":"likert","number":70,"text":"הילד/ה נוטה להאשים את עצמו/ה כשמשהו משתבש"},{"type":"likert","number":71,"text":"הילד/ה נוטה להאשים אחרים כשמשהו משתבש"},{"type":"likert","number":72,"text":"הילד/ה מגיב/ה באיחור לשאלות (לוקח לו/ה זמן לעבד)"},{"type":"likert","number":73,"text":"הילד/ה מתנתק/ת ושוקע/ת במחשבותיו/יה לפרק זמן ממושך"},{"type":"likert","number":74,"text":"הילד/ה מציג/ה יכולת קוגניטיבית גבוהה לגילו/ה (ידע כללי, פתרון חידות, סקרנות מילולית) לצד מסוגלות רגשית נמוכה (קושי בזיהוי, הבעה והכלה של רגשות)"},{"type":"likert","number":75,"text":"הילד/ה שוכח/ת הוראות מרובות-שלבים זמן קצר אחרי שמשמיעים אותן (זיכרון עבודה)"},{"type":"likert","number":76,"text":"הילד/ה מתקשה להתחיל משימה גם כשיודע/ת מה צריך לעשות (יזימה)"},{"type":"likert","number":77,"text":"הילד/ה לא מבין/ה את חומרת מעשיו/ה, בקרות אירוע, מתוך חוסר הבנה של הסיטואציה"},{"type":"likert","number":78,"text":"הילד/ה מתקשה לארגן את הציוד, החדר או הזמן שלו/ה (ארגון)"},{"type":"likert","number":79,"text":"הילד/ה מתקשה להעריך סכנות או השלכות אפשריות לפני פעולה"},{"type":"likert","number":80,"text":"הילד/ה חוזר/ת על פעולות מסוכנות למרות שהסבירו את הסכנה או איסור לבצע פעולות אלו"}]},{"title":"חלק ז׳ — ביטויים גופניים והתנהגויות חוזרות","intro":"","subsections":[],"questions":[{"type":"likert","number":81,"text":"הילד/ה מרטיב/ה במיטה בלילה"},{"type":"likert","number":82,"text":"הילד/ה בטון דיבור תינוקי"},{"type":"likert","number":83,"text":"הילד/ה נצמד/ת לחפץ מסוים (שמיכה, בובה, פריט)"},{"type":"likert","number":84,"text":"הילד/ה מתלונן/ת על כאבי בטן ללא סיבה רפואית ידועה"},{"type":"likert","number":85,"text":"הילד/ה לועס/ת שיער, שרוולים, חולצה או חפצים"},{"type":"likert","number":86,"text":"הילד/ה אוכל/ת יותר מתוך מצב רגשי (עצב, שעמום, כעס)"},{"type":"likert","number":87,"text":"הילד/ה עוסק/ת בדימוי גוף, מראה או משקל ע\"י שאילת שאלות מרובות בנושא או מתעניין בנושא"},{"type":"likert","number":88,"text":"הילד/ה מקבל/ת הערות שנתפסות בעיניו/ה כשליליות לגבי המראה החיצוני (ממשפחה, חברים, מסגרת)"}]},{"title":"חלק ח׳ — מסכים וטכנולוגיה","intro":"השאלה הראשונה בחלק זה אינה בסולם 1–5 רגיל, אלא בכמות שעות.","subsections":[],"questions":[{"type":"open_long","number":89,"text":"כמה שעות מסך הילד/ה צופה/משתמש ביום ממוצע?"},{"type":"likert","number":90,"text":"הילד/ה משחק/ת בקונסלת משחקים / מחשב או משחקים בטלפון בעיקר"},{"type":"likert","number":91,"text":"הילד/ה צופה בעיקר בתכנים מבוקרים (סרטים, סדרות לילדים)"},{"type":"likert","number":92,"text":"הילד/ה צופה ביוטיוב / טיקטוק / תוכן לא מבוקר"},{"type":"likert","number":93,"text":"הילד/ה מתפרץ/ת או מתקשה כשמגבילים את זמן המסך"},{"type":"likert","number":94,"text":"המסך משמש כעוגן רגיעה / אסקפיזם במצבים של חוסר יציבות רגשית או אחרי קונפליקט"},{"type":"likert","number":95,"text":"המסך מהווה נושא מרכזי בקונפליקטים בין ההורים לילד/ה"}]},{"title":"חלק ט׳ — לימודים, השוואה ודימוי עצמי","intro":"","subsections":[],"questions":[{"type":"likert","number":96,"text":"הילד/ה משווה את עצמו/ה ללימודים של ילדים אחרים"},{"type":"likert","number":97,"text":"הילד/ה תחרותי/ת בנוגע להישגים לימודיים"},{"type":"likert","number":98,"text":"הילד/ה מושפע/ת רגשית מהצלחה או כישלון בפעילויות תחרותיות (כגון ספורט, משחקים או תחביבים)"},{"type":"likert","number":99,"text":"הילד/ה מבטא קושי פיזי לימודי (הישארות בכיתה, ישיבה ממושכת על הכסא)"},{"type":"likert","number":100,"text":"בתחומי העניין שלו/ה, הילד/ה מגלה מסוגלות פיזית טובה (ריכוז, ישיבה ממושכת, שליטה גופנית)"},{"type":"likert","number":101,"text":"תחושות של חוסר ביטחון לימודי מעסיקות את הילד/ה ומשפיעות על התמודדותו/ה עם משימות לימודיות"},{"type":"likert","number":102,"text":"הילד/ה משתתף/ת בפעילות ספורטיבית או חוגית באופן עקבי"}]},{"title":"חלק י׳ — שינה","intro":"","subsections":[],"questions":[{"type":"likert","number":103,"text":"הילד/ה הולך/ת לישון בשעה קבועה"},{"type":"likert","number":104,"text":"הילד/ה זקוק/ה לליווי הורי כדי להירדם (הורה בחדר, נצמד/ת, אוחז/ת ביד)"},{"type":"likert","number":105,"text":"הילד/ה מתקשה להירדם (לרוב מעל 30 דקות), וההירדמות מלווה בתסכול, מצוקה או תלות באחר"},{"type":"likert","number":106,"text":"הילד/ה מתעורר/ת באמצע הלילה לפחות פעם בשבוע"},{"type":"likert","number":107,"text":"הילד/ה חווה חלומות רעים או סיוטים"},{"type":"likert","number":108,"text":"הילד/ה מתקשה לקום בבוקר ונראה/ית עייף/ה במהלך היום"},{"type":"likert","number":109,"text":"הילד/ה מבקש/ת לישון עם אור דלוק (פחד מחושך)"}]},{"title":"חלק יא׳ — חרדות, פחדים ודאגות","intro":"","subsections":[],"questions":[{"type":"likert","number":110,"text":"הילד/ה מבטא/ת חרדת פרידה (קושי להיפרד מהורה, בכי בפרידה, חזרה מרובה לחיבוקים)"},{"type":"likert","number":111,"text":"הילד/ה מגלה פחדים ספציפיים שמשבשים תפקוד (חיות, גובה, מים, רופאים, חושך)"},{"type":"likert","number":112,"text":"הילד/ה מודאג/ת מסיטואציות חברתיות (הופעה מול קבוצה, הצטרפות לפעילות חדשה, אירוח)"},{"type":"likert","number":113,"text":"הילד/ה מבקש/ת הרגעה חוזרת ונשנית מהורה (״מה אם...?״, ״האם זה יהיה בסדר?״)"},{"type":"likert","number":114,"text":"הילד/ה מבטא/ת תלונות גופניות לפני אירועים מלחיצים (כאבי בטן, ראש, בחילה)"},{"type":"likert","number":115,"text":"הילד/ה מבטא/ת עצב, חוסר אונים או ״אין לי כוח״ באופן חוזר"}]},{"title":"חלק יב׳ — מערכת הישרדות, דריכות ותלות","intro":"","subsections":[],"questions":[{"type":"likert","number":116,"text":"הילד/ה נראה/ית דרוך/ה או ״על המשמר״ במצבים יומיומיים (קשה להירגע, סורק/ת את הסביבה)"},{"type":"likert","number":117,"text":"הילד/ה מגיב/ה בעוצמה לרעשים פתאומיים, אזעקות או שינויים סביבתיים"},{"type":"likert","number":118,"text":"הילד/ה מציג/ה דריכות מוגברת מאז אירוע משמעותי או תקופה מלחיצה (מלחמה, מעבר, אובדן)"},{"type":"likert","number":119,"text":"הילד/ה נצמד/ת להורים בעוצמה גבוהה גם במצבים שגרתיים ובטוחים"}]},{"title":"חלק יג׳ — חוזקות ועמידות","intro":"","subsections":[],"questions":[{"type":"likert","number":120,"text":"הילד/ה מתמיד/ה במשימה גם כשהיא מאתגרת"},{"type":"likert","number":121,"text":"הילד/ה מצליח/ה להתאושש לאחר אכזבה, תסכול או כישלון"},{"type":"likert","number":122,"text":"הילד/ה משתמש/ת בהומור באופן בריא (לא ציני או פוגע)"},{"type":"likert","number":123,"text":"יש פעילות שבה הילד/ה מצליח/ה לתפקד היטב לאורך זמן (חוג, תחביב, יצירה)"},{"type":"likert","number":124,"text":"הילד/ה מצליח/ה לבקש עזרה כשהוא/היא זקוק/ה לה"}]},{"title":"חלק יד׳ — תמונה כללית וכיווני התהליך","intro":"החלק הזה הוא מקום לשתף בחופשיות. אין מספר נכון של מילים — 1–3 משפטים מספיקים.","subsections":[],"questions":[{"type":"checkbox","number":1,"label":"מה הקושי המרכזי שמעסיק אתכם כיום בקשר לילד/ה? (אפשר לסמן יותר מאחד)","options":["חרדה / פחדים","תוקפנות / אלימות","קושי בוויסות רגשי (התפרצויות)","קושי חברתי / חרם","שימוש מוגזם במסכים / התמכרות","הפרעות שינה","קושי במסגרת החינוכית","דימוי עצמי שלילי / חוסר ביטחון","קושי בריכוז / תפקודי קשב","קושי בתפקודים ניהוליים (ארגון, יזימה)","התנהגות מתנגדת / חוצפה","חוסר גמישות / נוקשות","רגישות סנסורית","תלונות גופניות (כאבי בטן/ראש)","הרטבה / רגרסיה","תלות יתר בהורה","קושי בלימודים / השוואה","דאגה ממראה / משקל","דריכות / מתח כללי","אחר"]},{"type":"open_long","number":2,"text":"אם יש מאבק יומיומי על היציאה למסגרת — כיצד אתם מסבירים לעצמכם את הסיבות העיקריות? (התנהגותי / רגשי / קושי בתפקודים ניהוליים / לוגיסטי / משהו אחר — תארו)"},{"type":"open_long","number":3,"text":"האם יש אירוע טראומתי, תקופה או שינוי משמעותי שכדאי שנדע עליו?"},{"type":"checkbox","number":4,"label":"מה הייתם רוצים שאתם ו/או הילד/ה ירוויח/תרוויח מהתהליך הזה? (אפשר לסמן יותר מאחד)","options":["הפחתה של התפרצויות זעם","שיפור היכולת לבטא רגשות","שיפור היחסים החברתיים","חיזוק דימוי עצמי וביטחון","שיפור תפקוד במסגרת החינוכית","הפחתת חרדה / פחדים","שיפור איכות השינה","הפחתת זמן מסכים / איזון בשימוש","שיפור היחסים בבית","כלים להורות מותאמת","שיפור התמודדות עם תסכול","שיפור היכולת לקבל גבולות","חיזוק העצמאות","שיפור היחסים בין האחים","הפחתת חרם / שיפור קשרים חברתיים","שיפור היכולת לבקש עזרה","חיבור לחוזקות ותחומי עניין","כלים להתמודדות עם אירוע משמעותי / טראומה","שיפור הוויסות העצמי הרגשי","אחר"]},{"type":"open_long","number":5,"text":"משהו נוסף שלא נשאל כאן ושאתם מרגישים שחשוב שנדע?"},{"type":"open_long","number":6,"text":"אם הייתם צריכים להגדיר 1–3 שינויים מרכזיים שאתם רוצים שיקרו בסיום התהליך — מה הם?"}]}];
+
+const STORAGE_KEY = 'parent_q_review_v4';
+const state = {};
+let currentFilter = 'all';
+
+const allQuestions = [];
+DATA.forEach((sec, si) => {
+  sec.questions.forEach((q, qi) => {
+    allQuestions.push({id: `s${si}_q${qi}`, sec, si, q, qi, ss: null, ssi: -1});
+  });
+  (sec.subsections || []).forEach((ss, ssi) => {
+    ss.questions.forEach((q, qi) => {
+      allQuestions.push({id: `s${si}_ss${ssi}_q${qi}`, sec, si, q, qi, ss, ssi});
+    });
+  });
+});
+allQuestions.forEach(item => { state[item.id] = {decision: null, note: ''}; });
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      Object.keys(parsed).forEach(k => { if (state[k]) state[k] = parsed[k]; });
+    }
+  } catch (e) {}
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+function escapeHTML(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function typeBadge(t) {
+  if (t === 'likert') return 'סולם 1–5';
+  if (t === 'checkbox') return 'בחירה';
+  if (t === 'open_short') return 'תשובה קצרה';
+  if (t === 'open_long') return 'תשובה פתוחה';
+  return '';
+}
+
+function renderQuestion(item, runningIndex) {
+  const {id, q} = item;
+  const decision = state[id].decision;
+  const klass = decision ? `q ${decision}` : 'q';
+  const text = q.type === 'likert' || q.type === 'open_long' ? q.text : q.label;
+
+  let preview = '';
+  if (q.type === 'likert') {
+    preview = `<div class="q-preview"><div class="likert-wrap"><div class="likert-row">
+        <span class="likert-end">תמיד</span>
+        <div class="likert-scale"><div class="lk">5</div><div class="lk">4</div><div class="lk">3</div><div class="lk">2</div><div class="lk">1</div></div>
+        <span class="likert-end">אף פעם</span>
+      </div></div></div>`;
+  } else if (q.type === 'checkbox') {
+    const opts = (q.options || []).map(o => `<span class="opt">${escapeHTML(o)}</span>`).join('');
+    preview = `<div class="q-preview"><div class="checkbox-opts">${opts}</div></div>`;
+  } else if (q.type === 'open_short') {
+    preview = `<div class="q-preview"><div class="open-line"></div><div class="open-hint">שדה תשובה קצר</div></div>`;
+  } else if (q.type === 'open_long') {
+    preview = `<div class="q-preview"><div class="open-line long"></div><div class="open-hint">שדה תשובה פתוח</div></div>`;
+  }
+
+  const note = state[id].note || '';
+  const noteHidden = note ? '' : 'hidden';
+
+  return `<div class="${klass}" data-qid="${id}" data-type="${q.type}">
+      <div class="q-top">
+        <div class="q-body">
+          <span class="q-num">${runningIndex}</span>
+          <span class="q-type-badge">${typeBadge(q.type)}</span>
+          <span class="q-text">${escapeHTML(text)}</span>
+          ${preview}
+          <button class="note-toggle" onclick="toggleNote('${id}')">${note ? '✎ ערוך הערה' : '+ הוסף הערה'}</button>
+          <textarea class="note-area ${noteHidden}" data-note="${id}" placeholder="הערה (אופציונלי) — למשל: ׳חופפת לשאלה 7׳, ׳ניסוח לא ברור׳..." oninput="onNoteInput('${id}', this.value)">${escapeHTML(note)}</textarea>
+        </div>
+        <div class="q-controls">
+          <button class="ctrl-btn keep" onclick="setDecision('${id}','keep')" title="להשאיר">✓</button>
+          <button class="ctrl-btn remove" onclick="setDecision('${id}','remove')" title="להסיר">✗</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderAll() {
+  const content = document.getElementById('content');
+  let html = '';
+  let running = 0;
+  DATA.forEach((sec, si) => {
+    let secKeep = 0, secRemove = 0, secTotal = 0;
+    sec.questions.forEach((_, qi) => {
+      secTotal++;
+      const d = state[`s${si}_q${qi}`].decision;
+      if (d === 'keep') secKeep++; else if (d === 'remove') secRemove++;
+    });
+    (sec.subsections || []).forEach((ss, ssi) => ss.questions.forEach((_, qi) => {
+      secTotal++;
+      const d = state[`s${si}_ss${ssi}_q${qi}`].decision;
+      if (d === 'keep') secKeep++; else if (d === 'remove') secRemove++;
+    }));
+    const secReviewed = secKeep + secRemove;
+
+    html += `<section class="section" id="sec-${si}">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">${escapeHTML(sec.title)}</h2>
+          ${sec.intro ? `<div class="section-intro">${escapeHTML(sec.intro)}</div>` : ''}
+        </div>
+        <div class="section-stats">
+          <span class="pill">${secReviewed}/${secTotal} נסקרו</span>
+          <span class="pill keep">✓ ${secKeep}</span>
+          <span class="pill remove">✗ ${secRemove}</span>
+          <span class="bulk-actions">
+            <button class="bulk-btn" onclick="bulkSection(${si},'keep')">השאר הכל</button>
+            <button class="bulk-btn" onclick="bulkSection(${si},'remove')">הסר הכל</button>
+            <button class="bulk-btn" onclick="bulkSection(${si},null)">נקה</button>
+          </span>
+        </div>
+      </div>`;
+
+    if (sec.subsections && sec.subsections.length > 0) {
+      if (sec.questions.length > 0) {
+        html += '<div class="questions">';
+        sec.questions.forEach((q, qi) => { running++; html += renderQuestion({id: `s${si}_q${qi}`, q}, running); });
+        html += '</div>';
+      }
+      sec.subsections.forEach((ss, ssi) => {
+        html += `<div class="subsection-title">${escapeHTML(ss.title)}</div><div class="questions">`;
+        ss.questions.forEach((q, qi) => { running++; html += renderQuestion({id: `s${si}_ss${ssi}_q${qi}`, q}, running); });
+        html += '</div>';
+      });
+    } else {
+      html += '<div class="questions">';
+      sec.questions.forEach((q, qi) => { running++; html += renderQuestion({id: `s${si}_q${qi}`, q}, running); });
+      html += '</div>';
+    }
+    html += '</section>';
+  });
+  content.innerHTML = html;
+  applyFilter();
+}
+
+function renderNav() {
+  const nav = document.getElementById('section-nav');
+  let html = '';
+  DATA.forEach((sec, si) => {
+    const total = sec.questions.length + (sec.subsections || []).reduce((a, ss) => a + ss.questions.length, 0);
+    let reviewed = 0;
+    sec.questions.forEach((_, qi) => { if (state[`s${si}_q${qi}`].decision) reviewed++; });
+    (sec.subsections || []).forEach((ss, ssi) => ss.questions.forEach((_, qi) => {
+      if (state[`s${si}_ss${ssi}_q${qi}`].decision) reviewed++;
+    }));
+    const cls = reviewed === total ? 'complete' : (reviewed > 0 ? 'partial' : '');
+    const shortTitle = sec.title.replace(/^חלק\s*/, '').replace(/—.*$/, '').trim();
+    html += `<a href="#sec-${si}" class="nav-pill ${cls}"><span class="dot"></span>${escapeHTML(shortTitle || sec.title)}<small style="opacity:.5;margin-inline-start:4px;">${reviewed}/${total}</small></a>`;
+  });
+  nav.innerHTML = html;
+}
+
+function updateStats() {
+  let keep = 0, remove = 0, unmarked = 0;
+  const total = allQuestions.length;
+  allQuestions.forEach(item => {
+    const d = state[item.id].decision;
+    if (d === 'keep') keep++;
+    else if (d === 'remove') remove++;
+    else unmarked++;
+  });
+  const reviewed = keep + remove;
+  document.getElementById('stat-reviewed').textContent = reviewed;
+  document.getElementById('stat-keep').textContent = keep;
+  document.getElementById('stat-remove').textContent = remove;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('prog-bar').style.width = (reviewed/total*100) + '%';
+  document.getElementById('cnt-all').textContent = total;
+  document.getElementById('cnt-unmarked').textContent = unmarked;
+  document.getElementById('cnt-keep').textContent = keep;
+  document.getElementById('cnt-remove').textContent = remove;
+
+  const strip = document.getElementById('save-strip');
+  document.getElementById('strip-count').textContent = keep;
+  if (reviewed > 0) strip.classList.add('show');
+  else strip.classList.remove('show');
+}
+
+function setDecision(qid, dec) {
+  if (state[qid].decision === dec) state[qid].decision = null;
+  else state[qid].decision = dec;
+  const el = document.querySelector(`[data-qid="${qid}"]`);
+  if (el) {
+    el.classList.remove('keep', 'remove');
+    if (state[qid].decision) el.classList.add(state[qid].decision);
+  }
+  updateStats();
+  renderNav();
+  refreshSectionStats(qid);
+  applyFilter();
+  saveState();
+}
+
+function refreshSectionStats(qid) {
+  const si = parseInt(qid.split('_')[0].slice(1));
+  const sec = DATA[si];
+  let total = sec.questions.length + (sec.subsections || []).reduce((a, ss) => a + ss.questions.length, 0);
+  let keep = 0, remove = 0;
+  sec.questions.forEach((_, qi) => {
+    const d = state[`s${si}_q${qi}`].decision;
+    if (d === 'keep') keep++; else if (d === 'remove') remove++;
+  });
+  (sec.subsections || []).forEach((ss, ssi) => ss.questions.forEach((_, qi) => {
+    const d = state[`s${si}_ss${ssi}_q${qi}`].decision;
+    if (d === 'keep') keep++; else if (d === 'remove') remove++;
+  }));
+  const secEl = document.getElementById(`sec-${si}`);
+  if (secEl) {
+    const pills = secEl.querySelector('.section-stats');
+    if (pills) {
+      pills.querySelector('.pill').textContent = `${keep+remove}/${total} נסקרו`;
+      pills.querySelectorAll('.pill')[1].textContent = `✓ ${keep}`;
+      pills.querySelectorAll('.pill')[2].textContent = `✗ ${remove}`;
+    }
+  }
+}
+
+function bulkSection(si, dec) {
+  const sec = DATA[si];
+  sec.questions.forEach((_, qi) => { state[`s${si}_q${qi}`].decision = dec; });
+  (sec.subsections || []).forEach((ss, ssi) => ss.questions.forEach((_, qi) => { state[`s${si}_ss${ssi}_q${qi}`].decision = dec; }));
+  renderAll();
+  updateStats();
+  renderNav();
+  saveState();
+}
+
+function toggleNote(qid) {
+  const ta = document.querySelector(`[data-note="${qid}"]`);
+  if (!ta) return;
+  ta.classList.toggle('hidden');
+  if (!ta.classList.contains('hidden')) ta.focus();
+}
+function onNoteInput(qid, val) {
+  state[qid].note = val;
+  saveState();
+}
+
+function applyFilter() {
+  const cards = document.querySelectorAll('.q');
+  let visible = 0;
+  cards.forEach(c => {
+    const id = c.getAttribute('data-qid');
+    const d = state[id].decision;
+    let show = true;
+    if (currentFilter === 'unmarked') show = !d;
+    else if (currentFilter === 'keep') show = d === 'keep';
+    else if (currentFilter === 'remove') show = d === 'remove';
+    c.classList.toggle('hidden', !show);
+    if (show) visible++;
+  });
+  document.getElementById('empty').classList.toggle('hidden', visible > 0);
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+function buildKeptHTML() {
+  const css = `
+    body { font-family: 'David', 'Times New Roman', serif; font-size: 12pt; line-height: 1.55; direction: rtl; text-align: right; }
+    h1 { font-size: 18pt; font-weight: bold; margin: 0 0 6pt 0; }
+    h2 { font-size: 14pt; font-weight: bold; color: #444; margin: 18pt 0 8pt 0; border-bottom: 1px solid #ccc; padding-bottom: 4pt; }
+    h3 { font-size: 12pt; font-weight: bold; margin: 12pt 0 6pt 0; }
+    p { margin: 6pt 0; }
+    .intro { color: #555; font-style: italic; }
+    .question { margin: 10pt 0; }
+    .q-text { font-weight: bold; }
+    .opts { color: #333; }
+    .scale-row { margin: 4pt 0; }
+    .answer-line { border-bottom: 1px solid #999; display: inline-block; width: 60%; height: 14pt; vertical-align: bottom; }
+    .answer-box { border: 1px solid #999; height: 60pt; margin-top: 4pt; }
+    .preamble { color: #444; }
+  `;
+  let html = `<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8"><title>שאלון הורים</title><style>${css}</style></head><body>`;
+  html += `<h1>שאלון הורים — הכרת הילד/ה</h1>`;
+  html += `<p class="intro">גילאי 5–10</p>`;
+  html += `<p class="preamble"><strong>שלום הורים יקרים,</strong> השאלון שלפניכם נועד לעזור לנו להכיר את הילד/ה שלכם — את העולם הרגשי, החברתי וההתנהגותי שלו/ה — כדי שנוכל לבנות עבורכם תכנית מותאמת אישית. אין כאן תשובות נכונות או לא נכונות, ואין שיפוטיות. ככל שתשיבו בכנות, כך נוכל להיות מועילים יותר.</p>`;
+  html += `<p class="preamble">בשאלות הסולם (1–5): 1 = אף פעם / כלל לא · 5 = כמעט תמיד / תמיד. בחרו את התשובה שמתארת בצורה הכי קרובה את הילד/ה שלכם בחודשים האחרונים.</p>`;
+
+  let likertNum = 0;
+  let openLongNum = 0;
+
+  DATA.forEach((sec, si) => {
+    let hasKept = false;
+    sec.questions.forEach((_, qi) => { if (state[`s${si}_q${qi}`].decision === 'keep') hasKept = true; });
+    (sec.subsections || []).forEach((ss, ssi) => ss.questions.forEach((_, qi) => {
+      if (state[`s${si}_ss${ssi}_q${qi}`].decision === 'keep') hasKept = true;
+    }));
+    if (!hasKept) return;
+
+    html += `<h2>${escapeHTML(sec.title)}</h2>`;
+    if (sec.intro) html += `<p class="intro">${escapeHTML(sec.intro)}</p>`;
+
+    function renderQ(q, id) {
+      if (state[id].decision !== 'keep') return '';
+      if (q.type === 'likert') {
+        likertNum++;
+        return `<p class="question"><span class="q-text">${likertNum}. ${escapeHTML(q.text)}</span></p>
+          <p class="scale-row">5 (תמיד) &nbsp;&nbsp; 4 &nbsp;&nbsp; 3 &nbsp;&nbsp; 2 &nbsp;&nbsp; 1 (אף פעם)</p>`;
+      } else if (q.type === 'checkbox') {
+        const opts = (q.options || []).map(o => `☐ ${escapeHTML(o)}`).join(' &nbsp;&nbsp; ');
+        return `<p class="question"><span class="q-text">${escapeHTML(q.label)}:</span> <span class="opts">${opts}</span></p>`;
+      } else if (q.type === 'open_short') {
+        return `<p class="question"><span class="q-text">${escapeHTML(q.label)}:</span> <span class="answer-line">&nbsp;</span></p>`;
+      } else if (q.type === 'open_long') {
+        openLongNum++;
+        return `<p class="question"><span class="q-text">${openLongNum}. ${escapeHTML(q.text)}</span></p><div class="answer-box"></div>`;
+      }
+      return '';
+    }
+
+    sec.questions.forEach((q, qi) => { html += renderQ(q, `s${si}_q${qi}`); });
+    (sec.subsections || []).forEach((ss, ssi) => {
+      const ssHasKept = ss.questions.some((_, qi) => state[`s${si}_ss${ssi}_q${qi}`].decision === 'keep');
+      if (!ssHasKept) return;
+      html += `<h3>${escapeHTML(ss.title)}</h3>`;
+      ss.questions.forEach((q, qi) => { html += renderQ(q, `s${si}_ss${ssi}_q${qi}`); });
+    });
+  });
+
+  html += `<p class="preamble" style="margin-top:18pt;"><em>תודה רבה על המילוי! הכנות והפירוט שלכם יעזרו לנו לבנות עבור הילד/ה תכנית באמת מותאמת.</em></p>`;
+  html += `</body></html>`;
+  return html;
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+}
+
+function exportDoc() {
+  const keptCount = Object.values(state).filter(s => s.decision === 'keep').length;
+  if (keptCount === 0) {
+    toast('לא נבחרו שאלות להשארה. סמנו לפחות שאלה אחת בתור ✓.');
+    return;
+  }
+  const html = buildKeptHTML();
+  try {
+    if (typeof htmlDocx !== 'undefined' && htmlDocx.asBlob) {
+      const blob = htmlDocx.asBlob(html, {orientation: 'portrait', margins: {top: 720, bottom: 720, left: 720, right: 720}});
+      downloadBlob(blob, 'שאלון_הורים_מותאם.docx');
+      toast(`✓ נשמר קובץ Word עם ${keptCount} שאלות`);
+      return;
+    }
+  } catch (e) { /* fallback */ }
+  const docHTML = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">${html.replace(/^<!DOCTYPE[^>]*>|<\/?html[^>]*>/gi,'')}</html>`;
+  const blob = new Blob(['﻿', docHTML], {type: 'application/msword'});
+  downloadBlob(blob, 'שאלון_הורים_מותאם.doc');
+  toast(`✓ נשמר קובץ Word עם ${keptCount} שאלות`);
+}
+
+function exportJSON() {
+  const out = {
+    generatedAt: new Date().toISOString(),
+    summary: {
+      total: allQuestions.length,
+      keep: Object.values(state).filter(s => s.decision === 'keep').length,
+      remove: Object.values(state).filter(s => s.decision === 'remove').length,
+      unmarked: Object.values(state).filter(s => s.decision === null).length
+    },
+    sections: DATA.map((sec, si) => ({
+      title: sec.title,
+      questions: [
+        ...sec.questions.map((q, qi) => ({id: `s${si}_q${qi}`, ...q, decision: state[`s${si}_q${qi}`].decision, note: state[`s${si}_q${qi}`].note})),
+        ...(sec.subsections || []).flatMap((ss, ssi) => ss.questions.map((q, qi) => ({id: `s${si}_ss${ssi}_q${qi}`, subsection: ss.title, ...q, decision: state[`s${si}_ss${ssi}_q${qi}`].decision, note: state[`s${si}_ss${ssi}_q${qi}`].note})))
+      ]
+    }))
+  };
+  const blob = new Blob([JSON.stringify(out, null, 2)], {type: 'application/json'});
+  downloadBlob(blob, 'משוב_שאלון.json');
+  toast('✓ קובץ המשוב נשמר');
+}
+
+function resetAll() {
+  if (!confirm('לאפס את כל הסימונים וההערות?')) return;
+  Object.keys(state).forEach(k => { state[k] = {decision: null, note: ''}; });
+  renderAll();
+  updateStats();
+  renderNav();
+  saveState();
+  toast('כל הסימונים אופסו');
+}
+
+document.querySelectorAll('.chip').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+    currentFilter = c.getAttribute('data-filter');
+    applyFilter();
+  });
+});
+document.getElementById('btn-reset').addEventListener('click', resetAll);
+document.getElementById('btn-export-json').addEventListener('click', exportJSON);
+document.getElementById('btn-export-doc').addEventListener('click', exportDoc);
+
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+  if (e.key === 'j' || e.key === 'k') {
+    e.preventDefault();
+    const cards = Array.from(document.querySelectorAll('.q:not(.hidden)'));
+    if (cards.length === 0) return;
+    const scrollY = window.scrollY + 200;
+    let idx = cards.findIndex(c => c.offsetTop > scrollY);
+    if (idx === -1) idx = cards.length - 1;
+    if (e.key === 'k') idx = Math.max(0, idx - 1);
+    cards[idx].scrollIntoView({behavior: 'smooth', block: 'center'});
+  }
+});
+
+(function init() {
+  loadState();
+  renderAll();
+  renderNav();
+  updateStats();
+})();
+</script>
+</body>
+</html>

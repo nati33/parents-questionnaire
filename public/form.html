@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>שאלון הורים — הכרת הילד/ה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;800&family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-docx-js/0.3.1/html-docx.js"></script>
+<style>
+  :root {
+    --bg: #F7F3EC;
+    --bg-elev: #FDFBF6;
+    --bg-card: #FFFFFF;
+    --ink: #2A2722;
+    --ink-soft: #5A554D;
+    --ink-mute: #908778;
+    --rule: #E6DFD2;
+    --rule-soft: #EFE9DC;
+    --accent: #8B6F47;
+    --accent-soft: #C9A87C;
+    --keep: #5C8F4A;
+    --keep-bg: #EAF1E0;
+    --keep-tint: #F5F9EE;
+    --shadow-sm: 0 1px 2px rgba(40,30,15,0.04), 0 1px 3px rgba(40,30,15,0.03);
+    --shadow-md: 0 4px 12px rgba(40,30,15,0.06), 0 2px 4px rgba(40,30,15,0.04);
+    --shadow-lg: 0 12px 28px rgba(40,30,15,0.10), 0 4px 8px rgba(40,30,15,0.05);
+    --r: 14px;
+    --r-sm: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Heebo", -apple-system, "Segoe UI", "David", "Times New Roman", serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background-image:
+      radial-gradient(at 80% -10%, rgba(201,168,124,0.10), transparent 50%),
+      radial-gradient(at 10% 100%, rgba(122,139,107,0.07), transparent 45%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    padding-bottom: 120px;
+  }
+  .display, h1.title { font-family: "Frank Ruhl Libre", "David", serif; font-weight: 700; letter-spacing: -0.01em; }
+  button { font-family: inherit; cursor: pointer; }
+
+  /* ── Top bar ───────────────────────────────────────── */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(247,243,236,0.92);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    border-bottom: 1px solid var(--rule);
+  }
+  .topbar-inner {
+    max-width: 1180px; margin: 0 auto;
+    padding: 14px 28px 0 28px;
+  }
+  .topbar-row1 {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 24px; flex-wrap: wrap; margin-bottom: 12px;
+  }
+  h1.title {
+    font-size: clamp(22px, 2.4vw, 30px);
+    margin: 0;
+    color: var(--ink);
+  }
+  .title small {
+    display: block;
+    font-family: "Heebo", sans-serif;
+    font-weight: 400;
+    font-size: 13px;
+    color: var(--ink-mute);
+    margin-top: 2px;
+    letter-spacing: 0.02em;
+  }
+  .stats-cluster {
+    display: flex; gap: 18px; align-items: center; flex-wrap: wrap;
+  }
+  .stat {
+    display: flex; align-items: baseline; gap: 6px;
+    font-size: 13px; color: var(--ink-soft);
+  }
+  .stat .num {
+    font-family: "Frank Ruhl Libre", serif;
+    font-size: 22px; font-weight: 700;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .stat.answered .num { color: var(--keep); }
+
+  .progress {
+    height: 6px; background: var(--rule-soft); border-radius: 999px;
+    overflow: hidden; position: relative; margin-bottom: 14px;
+  }
+  .progress .bar {
+    position: absolute; top: 0; bottom: 0; right: 0;
+    background: linear-gradient(90deg, var(--accent-soft), var(--accent));
+    transition: width 0.4s ease;
+    border-radius: 999px;
+  }
+
+  .section-nav {
+    overflow-x: auto;
+    border-top: 1px solid var(--rule-soft);
+    padding: 10px 0;
+    scrollbar-width: thin;
+  }
+  .section-nav-inner {
+    display: flex; gap: 6px;
+    padding: 0 28px;
+    max-width: 1180px; margin: 0 auto;
+  }
+  .nav-pill {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid var(--rule);
+    text-decoration: none;
+    transition: all 0.15s ease;
+    display: inline-flex; align-items: center; gap: 6px;
+    white-space: nowrap;
+  }
+  .nav-pill:hover { background: var(--bg-elev); }
+  .nav-pill .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--rule);
+    flex-shrink: 0;
+  }
+  .nav-pill.partial .dot { background: var(--accent-soft); }
+  .nav-pill.complete .dot { background: var(--keep); }
+
+  /* ── Content ───────────────────────────────────────── */
+  main {
+    max-width: 1180px; margin: 0 auto;
+    padding: 32px 28px 60px 28px;
+  }
+
+  .preamble {
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    border-inline-start: 3px solid var(--accent-soft);
+    border-radius: var(--r);
+    padding: 22px 26px;
+    margin-bottom: 32px;
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .preamble h2 {
+    font-family: "Frank Ruhl Libre", serif;
+    font-size: 22px;
+    margin: 0 0 4px 0;
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .preamble .age-line {
+    color: var(--ink-mute);
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .preamble .scale-key {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--rule);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    font-size: 13px;
+  }
+  .preamble .scale-key span { color: var(--ink); }
+
+  /* ── Section card ──────────────────────────────────── */
+  .section {
+    margin-bottom: 40px;
+    scroll-margin-top: 180px;
+  }
+  .section-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 18px; margin-bottom: 14px; flex-wrap: wrap;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .section-title {
+    font-family: "Frank Ruhl Libre", serif;
+    font-size: 24px; font-weight: 700;
+    margin: 0;
+    color: var(--ink);
+  }
+  .section-intro {
+    font-size: 13px; color: var(--ink-mute);
+    margin-top: 4px; max-width: 60ch;
+  }
+  .section-stats {
+    display: flex; gap: 12px; font-size: 12px; color: var(--ink-mute);
+    align-items: center; flex-wrap: wrap;
+  }
+  .section-stats .pill {
+    padding: 3px 9px; border-radius: 999px;
+    background: var(--bg-elev); border: 1px solid var(--rule);
+  }
+  .subsection-title {
+    font-family: "Frank Ruhl Libre", serif;
+    font-weight: 500;
+    font-size: 17px;
+    color: var(--accent);
+    margin: 24px 0 10px 0;
+    letter-spacing: 0.01em;
+  }
+  .subsection-title::before {
+    content: "";
+    display: inline-block;
+    width: 18px; height: 1px;
+    background: var(--accent-soft);
+    vertical-align: middle;
+    margin-inline-end: 8px;
+  }
+
+  /* ── Question card ─────────────────────────────────── */
+  .questions { display: flex; flex-direction: column; gap: 10px; }
+  .q {
+    background: var(--bg-card);
+    border: 1px solid var(--rule);
+    border-radius: var(--r);
+    padding: 16px 18px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+  }
+  .q.answered {
+    background: var(--keep-tint);
+    border-color: #C8DAB1;
+  }
+  .q-num {
+    display: inline-block;
+    font-family: "Frank Ruhl Libre", serif;
+    font-size: 13px;
+    color: var(--ink-mute);
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 1px 7px;
+    margin-inline-end: 8px;
+    min-width: 28px;
+    text-align: center;
+  }
+  .q-text {
+    font-size: 15px;
+    color: var(--ink);
+    line-height: 1.55;
+  }
+
+  /* ── Likert input ──────────────────────────────────── */
+  .likert-input {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .likert-end {
+    font-size: 12px;
+    color: var(--ink-mute);
+    min-width: 56px;
+  }
+  .likert-end.high { text-align: end; }
+  .likert-options {
+    display: flex; gap: 6px;
+    flex: 1; justify-content: center;
+  }
+  .likert-options input[type="radio"] {
+    display: none;
+  }
+  .likert-options label {
+    width: 38px; height: 38px;
+    border: 1.5px solid var(--rule);
+    border-radius: 50%;
+    background: var(--bg-elev);
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Frank Ruhl Libre", serif;
+    font-size: 15px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+  .likert-options label:hover {
+    border-color: var(--accent-soft);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+  .likert-options input[type="radio"]:checked + label {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    font-weight: 600;
+  }
+
+  /* ── Checkbox options ──────────────────────────────── */
+  .checkbox-input {
+    margin-top: 10px;
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .checkbox-input label {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    background: var(--bg-elev);
+    border: 1.5px solid var(--rule);
+    border-radius: 999px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+  .checkbox-input label:hover { border-color: var(--accent-soft); }
+  .checkbox-input input[type="checkbox"] { accent-color: var(--accent); }
+  .checkbox-input label.checked {
+    background: var(--keep-tint);
+    border-color: var(--keep);
+    color: var(--ink);
+  }
+
+  /* ── Text inputs ───────────────────────────────────── */
+  .text-input {
+    margin-top: 10px;
+    width: 100%;
+    background: var(--bg-elev);
+    border: 1.5px solid var(--rule);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    transition: all 0.15s ease;
+  }
+  .text-input:focus {
+    outline: none;
+    border-color: var(--accent-soft);
+    background: var(--bg-card);
+  }
+  textarea.text-input {
+    min-height: 110px;
+    resize: vertical;
+    line-height: 1.6;
+  }
+
+  /* ── Save strip ────────────────────────────────────── */
+  .save-strip {
+    position: fixed;
+    bottom: 18px; left: 50%; transform: translateX(-50%);
+    background: var(--ink);
+    color: var(--bg);
+    padding: 12px 22px;
+    border-radius: 14px;
+    box-shadow: var(--shadow-lg);
+    display: flex; align-items: center; gap: 14px;
+    font-size: 13px;
+    z-index: 40;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .save-strip .summary { opacity: 0.85; }
+  .save-strip .summary strong { color: #C9A87C; }
+  .save-strip .btn {
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--bg);
+    padding: 8px 16px;
+    border-radius: var(--r-sm);
+    font-size: 13px; font-weight: 500;
+    transition: all 0.15s ease;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .save-strip .btn:hover {
+    background: rgba(255,255,255,0.18);
+    border-color: rgba(255,255,255,0.30);
+  }
+  .save-strip .btn.primary {
+    background: var(--accent-soft);
+    color: #2A1F10;
+    border-color: var(--accent-soft);
+    font-weight: 600;
+  }
+  .save-strip .btn.primary:hover {
+    background: #D6B68A;
+    border-color: #D6B68A;
+  }
+  .save-strip .btn.danger:hover { color: #FFB4A4; }
+
+  /* ── Toast ─────────────────────────────────────────── */
+  .toast {
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%) translateY(-20px);
+    background: var(--ink); color: var(--bg);
+    padding: 12px 22px; border-radius: 10px;
+    box-shadow: var(--shadow-lg);
+    font-size: 14px; z-index: 100;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 700px) {
+    .topbar-inner { padding: 12px 16px 0 16px; }
+    main { padding: 24px 16px 60px 16px; }
+    h1.title { font-size: 20px; }
+    .section-nav-inner { padding: 0 16px; }
+    .save-strip { left: 12px; right: 12px; transform: none; }
+    .likert-end { min-width: auto; font-size: 11px; }
+    .likert-options label { width: 32px; height: 32px; font-size: 13px; }
+  }
+
+  @media print {
+    .topbar, .save-strip, .toast { display: none !important; }
+    body { background: white; padding: 0; }
+    main { padding: 0 20px; max-width: none; }
+    .section { page-break-inside: avoid; }
+    .q { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
+    .likert-options label { border-color: #777; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-row1">
+      <h1 class="title">
+        שאלון הורים — הכרת הילד/ה
+        <small>גילאי 5–10 · זמן מילוי משוער: 20-25 דקות</small>
+      </h1>
+      <div class="stats-cluster">
+        <div class="stat answered"><span class="num" id="stat-answered">0</span><span>נענו</span></div>
+        <div class="stat"><span class="num" id="stat-total">0</span><span>סה״כ</span></div>
+      </div>
+    </div>
+    <div class="progress"><div class="bar" id="prog-bar" style="width:0%"></div></div>
+  </div>
+  <nav class="section-nav">
+    <div class="section-nav-inner" id="section-nav"></div>
+  </nav>
+</header>
+
+<main>
+  <div class="preamble">
+    <h2>שלום הורים יקרים</h2>
+    <div class="age-line">גילאי 5–10 · זמן מילוי משוער: 20-25 דקות</div>
+    <div>השאלון שלפניכם נועד לעזור לנו להכיר את הילד/ה שלכם — את העולם הרגשי, החברתי וההתנהגותי שלו/ה — כדי שנוכל לבנות עבורכם תכנית מותאמת אישית. אין כאן תשובות נכונות או לא נכונות, ואין שיפוטיות. ככל שתשיבו בכנות, כך נוכל להיות מועילים יותר.</div>
+    <div class="scale-key">
+      <span><strong>סולם 1–5:</strong></span>
+      <span>1 = אף פעם / כלל לא</span>
+      <span>2 = לעיתים רחוקות</span>
+      <span>3 = לפעמים</span>
+      <span>4 = לעיתים קרובות</span>
+      <span>5 = כמעט תמיד / תמיד</span>
+    </div>
+    <div style="margin-top:10px;font-size:13px;color:var(--ink-mute);">
+      התשובות נשמרות אוטומטית בדפדפן שלכם. בסיום — לחצו על <em>״שמור Word״</em> או <em>״הדפס / PDF״</em>.
+    </div>
+  </div>
+
+  <div id="content"></div>
+</main>
+
+<div class="save-strip">
+  <span class="summary"><strong id="strip-count">0</strong> תשובות נשמרו אוטומטית</span>
+  <button class="btn" onclick="exportJSON()">ייצא תשובות (JSON)</button>
+  <button class="btn" onclick="window.print()">🖨 הדפס / PDF</button>
+  <button class="btn primary" onclick="exportWord()">💾 שמור Word</button>
+  <button class="btn danger" onclick="resetAll()">איפוס</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = [{"title":"חלק א׳ — רקע ופרטים כלליים","intro":"זה חלק קצר של פרטי רקע. לא כל השאלות חובה — דלגו על מה שלא רלוונטי או שאינכם רוצים לשתף.","subsections":[{"title":"הילד/ה","questions":[{"type":"open_short","label":"גיל"},{"type":"checkbox","label":"מין","options":["בן","בת","אחר/מעדיף/ה לא לציין"]},{"type":"checkbox","label":"מיקום במשפחה","options":["בכור/ה","אמצעי/ת","צעיר/ה","יחיד/ה"]},{"type":"open_short","label":"מספר אחים/אחיות וגילאיהם"},{"type":"checkbox","label":"סוג מסגרת חינוכית","options":["ממלכתי","ממלכתי דתי","חרדי","דמוקרטי","אנתרופוסופי","אחר"]},{"type":"open_short","label":"כיתה / גן"}]},{"title":"הורים ומבנה משפחתי","questions":[{"type":"checkbox","label":"מצב משפחתי","options":["נשואים","פרודים","גרושים","בהליך גירושין","אלמנ/ה","חד-הורי/ת","אחר"]},{"type":"open_short","label":"דמויות התקשרות משמעותיות נוספות (סבים, מטפלת, קרוב משפחה)"},{"type":"checkbox","label":"הערכה כללית של מצב סוציו־אקונומי","options":["נמוך","בינוני נמוך","בינוני","בינוני גבוה","גבוה"]}]},{"title":"רקע קליני וחברתי","questions":[{"type":"open_short","label":"האם יש אבחון קליני (ADHD, חרדה, ספקטרום וכד׳)? אם כן — איזה?"},{"type":"open_short","label":"האם יש לקות למידה ידועה? איזו?"},{"type":"open_short","label":"טיפול נוכחי או בעבר (אבחון, יעוץ, תרפיה — אם רלוונטי)"},{"type":"open_short","label":"האם היה אירוע חברתי משמעותי (חרם, אלימות, טראומה) — תיאור קצר"},{"type":"open_short","label":"חוגים, ספורט ופעילויות שהילד/ה משתתף/ת בהן"}]}],"questions":[]},{"title":"חלק ב׳ — אקלים משפחתי ויחסים בבית","intro":"השאלות הבאות נוגעות לאיך שהבית מתנהל ואיך הילד/ה חווה אותו.","subsections":[],"questions":[{"type":"likert","number":1,"text":"ההורים נוכחים פיזית בבית באופן יומיומי או לפחות אחד מההורים"},{"type":"likert","number":2,"text":"לתחושתכם יש להורים או לפחות לאחד מהם יציבות מנטלית בזמן קונפליקטים או חוויות מאתגרות שהילד/ה חווה"},{"type":"likert","number":3,"text":"אנחנו חווים קונפליקטים גלויים בין ההורים בבית"},{"type":"likert","number":4,"text":"יחסי הילד/ה עם האחים והאחיות חמים וקרובים"},{"type":"likert","number":5,"text":"יש מריבות תכופות בין הילד/ה לאחים"},{"type":"likert","number":6,"text":"הילד/ה מבטא/ת קרבה מיוחדת לאחד ההורים"},{"type":"likert","number":7,"text":"הילד/ה מתקשה רגשית כשההורה המועדף לא בקרבת מקום"},{"type":"likert","number":8,"text":"אנחנו משתמשים בענישה פיזית (סטירה, משיכה, החזקה בכוח)"},{"type":"likert","number":9,"text":"אנחנו משתמשים בענישה רגשית (התעלמות, איום בנטישה, ביטול הרגשות של הילד/ה ע\"י הכחשה)"},{"type":"likert","number":10,"text":"אנחנו מרימים קול או צועקים על הילד/ה"},{"type":"likert","number":11,"text":"יש בבית כללי התנהגות ברורים שהילד/ה מכיר/ה"},{"type":"likert","number":12,"text":"הילד/ה מקבל/ת תשומת לב חיובית לעיתים קרובות (חיבוק, מילה טובה, זמן איכות)"},{"type":"likert","number":13,"text":"כשהילד/ה אומר/ת שנפגע/ת ממני, אני מכחיש/ה / מבטל/ת את הרגש / מחזיר/ה אליו/ה אשמה או מאשים/ה אותו/ה שזה בגללו/ה"},{"type":"likert","number":14,"text":"כשאני אומר/ת ״לא״ — אני מצליח/ה לעמוד בזה גם תחת לחץ"},{"type":"likert","number":15,"text":"ההורים בבית עקביים בגבולות (אין הבדל בין יום ליום)"},{"type":"likert","number":16,"text":"יש פער בולט בין שני ההורים — אחד מציב גבולות והשני מרכך"},{"type":"likert","number":17,"text":"אני נכנע/ת בסוף לבקשות חוזרות או התקפי בכי של הילד/ה"},{"type":"likert","number":18,"text":"כשאמרנו שיקרה משהו (תוצאה / גמול / עונש) — אנחנו בפועל מבצעים זאת"}]},{"title":"חלק ג׳ — ויסות רגשי והבעת רגשות","intro":"","subsections":[],"questions":[{"type":"likert","number":19,"text":"הילד/ה מתפרץ/ת בכעס עז כשאומרים לו/ה ״לא״"},{"type":"likert","number":20,"text":"הילד/ה מתקשה לחכות בסבלנות"},{"type":"likert","number":21,"text":"כשהילד/ה מוצף/ת רגשית — לוקח לו/ה הרבה זמן להתאושש"},{"type":"likert","number":22,"text":"הילד/ה חווה התקפי בכי או זעם בלתי נשלטים"},{"type":"likert","number":23,"text":"הילד/ה מתקשה לעבור בין מצבים רגשיים שונים (מנוקשות לגמישות / מכעס לשיח / מהאשמה למציאת פתרון)"},{"type":"likert","number":24,"text":"הילד/ה יודע/ת להסביר במילים מה הוא/היא מרגיש/ה (מכיר מה הוא חווה ובחוויה עצמה, לא רק במילים של שמחה / כעס / עצב אלא תיאור של חוויה)"},{"type":"likert","number":25,"text":"הילד/ה מתלונן/ת על חוסר שייכות או דחייה (״אף אחד לא רוצה אותי״, ״אני לבד״)"},{"type":"likert","number":26,"text":"הילד/ה נמנע/ת משיחה על רגשות עם ההורים (מתחמק או מרגיש שמבקרים אותו)"},{"type":"likert","number":27,"text":"הילד/ה מתקשה לבטא את עצמו בביטוי מילולי או להציב גבולות מול חבר/ה"},{"type":"likert","number":28,"text":"הילד/ה מבטא/ת רגישות וחמלה כלפי אחרים שמתקשים"},{"type":"likert","number":29,"text":"בזמן שהילד/ה עצמו/ה במצוקה — הוא אינו מתחשב בסביבה בכלל"},{"type":"likert","number":30,"text":"הילד/ה ממשיך/ה כרגיל גם כשמישהו לידו מתקשה (בלי להבחין/להגיב)"},{"type":"likert","number":31,"text":"לפי תחושתכם, כשהילד/ה מתעלם/ת ממצוקה של אחר, זה נובע בעיקר ממבוכה או חוסר נוחות חברתית"},{"type":"likert","number":32,"text":"לפי תחושתכם, כשהילד/ה מתעלם/ת ממצוקה של אחר, זה נובע בעיקר מחוסר הבנה של הסיטואציה"},{"type":"likert","number":33,"text":"הילד/ה משתמש/ת בהגדרות ״ילד טוב״ / ״ילד רע״ כדי לתאר את עצמו/ה או אחרים"}]},{"title":"חלק ד׳ — חברה ויחסים בין-אישיים","intro":"","subsections":[],"questions":[{"type":"likert","number":34,"text":"הילד/ה יוזם/ת בעצמו/ה פגישות עם חברים"},{"type":"likert","number":35,"text":"הילד/ה אוהב/ת לארח חברים בבית"},{"type":"likert","number":36,"text":"הילד/ה מגן/ה על ה״טריטוריה״ שלו/ה (חפצים, מקום, חדר) גם בנוכחות חברים"},{"type":"likert","number":37,"text":"הילד/ה מבין/ה היטב סיטואציות חברתיות (מבחין/ה מתי מישהו עצוב, מתבדח, רציני)"},{"type":"likert","number":38,"text":"הילד/ה מתקשה לפרגן או להחמיא לחברים"},{"type":"likert","number":39,"text":"הילד/ה מתקשה לקבל מחמאה או פרגון (מתעלם, מגיב בכעס או מתכחש)"},{"type":"likert","number":40,"text":"הילד/ה מבטא/ת קנאה כלפי הצלחות של חברים"},{"type":"likert","number":41,"text":"הילד/ה משתמש/ת בשפה פוגענית כלפי חברים (קללות, הקטנה של האחר, דחייה)"},{"type":"likert","number":42,"text":"הילד/ה משתמש/ת בשפה פוגענית כלפי בני משפחה"},{"type":"likert","number":43,"text":"הילד/ה מסתבך/ת באלימות פיזית עם ילדים אחרים"},{"type":"likert","number":44,"text":"הילד/ה מגן/ה בעוצמה על המקום/הטריטוריה שלו/ה בבית (חדר, כיסא, חפצים)"},{"type":"likert","number":45,"text":"הילד/ה זקוק/ה לתחושה ש״רואים אותו/ה״ — מכירים בנוכחותו/ה ובמקומו/ה במשפחה והוא משקיע המון אנרגיה לטובת קבלת התחושה"},{"type":"likert","number":46,"text":"הילד/ה נמנע/ת מהמסגרת החינוכית או רוצה לברוח ממנה"},{"type":"likert","number":47,"text":"יש מאבק יומיומי על היציאה למסגרת החינוכית (קושי קבוע, לא חד-פעמי)"},{"type":"likert","number":48,"text":"אנו מבזבזים יותר מחצי שעה ביום לשכנע את הילד/ה ללכת למסגרת"},{"type":"likert","number":49,"text":"קיבלנו פניות מהמסגרת על קללות, אלימות מצד הילד/ה"},{"type":"likert","number":50,"text":"קיבלנו פניות מהמסגרת על קללות או אלימות — כלפי הילד/ה (מצד ילדים אחרים או צוות)"},{"type":"likert","number":51,"text":"קיבלנו פניות מהמסגרת על חרם או הדרה חברתית — כלפי הילד/ה"},{"type":"likert","number":52,"text":"קיבלנו פניות מהמסגרת על חרם או הדרה חברתית — מצד הילד/ה (הילד/ה מחרים/ה או מדיר/ה ילדים אחרים)"},{"type":"likert","number":53,"text":"הילד/ה רוצה לקחת חלק בפעילויות חברתיות וקבוצתיות"}]},{"title":"חלק ה׳ — סמכות, גבולות וצורך בשליטה","intro":"","subsections":[],"questions":[{"type":"likert","number":54,"text":"הילד/ה מתנגד/ת פיזית לבקשות יומיומיות (להתלבש, לצאת מהבית, לאכול)"},{"type":"likert","number":55,"text":"ההתנגדות הפיזית מתעצמת בתקופות של עומס רגשי"},{"type":"likert","number":56,"text":"הילד/ה מתחצף/ת להורים"},{"type":"likert","number":57,"text":"יש פער בולט בין התנהגות הילד/ה במסגרת לבין הבית"},{"type":"likert","number":58,"text":"הילד/ה זקוק/ה לדעת מראש מה הולך לקרות (לאן הולכים, מתי, עם מי)"},{"type":"likert","number":59,"text":"כשתכניות משתנות ללא הכנה מראש, הילד/ה מתפרץ/ת או מתפרק/ת רגשית"},{"type":"likert","number":60,"text":"כשאין לנו תשובה ודאית למשהו, הילד/ה נכנס/ת ל״לופ״ של שאלות חוזרות שניכר שמטריד/ות אותו/ה"},{"type":"likert","number":61,"text":"הילד/ה זקוק/ה לתשומת לב מתמדת"},{"type":"likert","number":62,"text":"הילד/ה צריך/ה לשלוט במרחב או בסיטואציה"},{"type":"likert","number":63,"text":"הילד/ה נמצא/ת בתנועה מתמדת — קשה לו/ה לשבת במקום (זז/ה, קופץ/ת, רץ/ה)"},{"type":"likert","number":64,"text":"הילד/ה זקוק/ה לתחושת מגע חזקה — נצמד/ת, נוגע/ת, מחבק/ת או דוחף/ת לעיתים תכופות"},{"type":"likert","number":65,"text":"הילד/ה מגיב/ה בעוצמה לגירויים סנסוריים (רעש, ריחות, מגע, אור)"},{"type":"likert","number":66,"text":"הילד/ה מתקשה לעצור פעולה שהתחיל/ה גם כשמבקשים ממנו/ה"}]},{"title":"חלק ו׳ — גמישות, חשיבה וקבלת החלטות","intro":"","subsections":[],"questions":[{"type":"likert","number":67,"text":"הילד/ה מגלה גמישות מחשבתית כשדברים לא הולכים כמתוכנן (פתרונות יצירתיים)"},{"type":"likert","number":68,"text":"הילד/ה מתקשה בקבלת החלטות (מתבלבל/ת, נמנע/ת, נאלם/ת)"},{"type":"likert","number":69,"text":"הילד/ה תופס/ת את עצמו/ה כקורבן בסיטואציות (״לא הוגן שזה קורה לי״, ״תמיד אני זה שמקבל/ת״)"},{"type":"likert","number":70,"text":"הילד/ה נוטה להאשים את עצמו/ה כשמשהו משתבש"},{"type":"likert","number":71,"text":"הילד/ה נוטה להאשים אחרים כשמשהו משתבש"},{"type":"likert","number":72,"text":"הילד/ה מגיב/ה באיחור לשאלות (לוקח לו/ה זמן לעבד)"},{"type":"likert","number":73,"text":"הילד/ה מתנתק/ת ושוקע/ת במחשבותיו/יה לפרק זמן ממושך"},{"type":"likert","number":74,"text":"הילד/ה מציג/ה יכולת קוגניטיבית גבוהה לגילו/ה (ידע כללי, פתרון חידות, סקרנות מילולית) לצד מסוגלות רגשית נמוכה (קושי בזיהוי, הבעה והכלה של רגשות)"},{"type":"likert","number":75,"text":"הילד/ה שוכח/ת הוראות מרובות-שלבים זמן קצר אחרי שמשמיעים אותן (זיכרון עבודה)"},{"type":"likert","number":76,"text":"הילד/ה מתקשה להתחיל משימה גם כשיודע/ת מה צריך לעשות (יזימה)"},{"type":"likert","number":77,"text":"הילד/ה לא מבין/ה את חומרת מעשיו/ה, בקרות אירוע, מתוך חוסר הבנה של הסיטואציה"},{"type":"likert","number":78,"text":"הילד/ה מתקשה לארגן את הציוד, החדר או הזמן שלו/ה (ארגון)"},{"type":"likert","number":79,"text":"הילד/ה מתקשה להעריך סכנות או השלכות אפשריות לפני פעולה"},{"type":"likert","number":80,"text":"הילד/ה חוזר/ת על פעולות מסוכנות למרות שהסבירו את הסכנה או איסור לבצע פעולות אלו"}]},{"title":"חלק ז׳ — ביטויים גופניים והתנהגויות חוזרות","intro":"","subsections":[],"questions":[{"type":"likert","number":81,"text":"הילד/ה מרטיב/ה במיטה בלילה"},{"type":"likert","number":82,"text":"הילד/ה בטון דיבור תינוקי"},{"type":"likert","number":83,"text":"הילד/ה נצמד/ת לחפץ מסוים (שמיכה, בובה, פריט)"},{"type":"likert","number":84,"text":"הילד/ה מתלונן/ת על כאבי בטן ללא סיבה רפואית ידועה"},{"type":"likert","number":85,"text":"הילד/ה לועס/ת שיער, שרוולים, חולצה או חפצים"},{"type":"likert","number":86,"text":"הילד/ה אוכל/ת יותר מתוך מצב רגשי (עצב, שעמום, כעס)"},{"type":"likert","number":87,"text":"הילד/ה עוסק/ת בדימוי גוף, מראה או משקל ע\"י שאילת שאלות מרובות בנושא או מתעניין בנושא"},{"type":"likert","number":88,"text":"הילד/ה מקבל/ת הערות שנתפסות בעיניו/ה כשליליות לגבי המראה החיצוני (ממשפחה, חברים, מסגרת)"}]},{"title":"חלק ח׳ — מסכים וטכנולוגיה","intro":"השאלה הראשונה בחלק זה אינה בסולם 1–5 רגיל, אלא בכמות שעות.","subsections":[],"questions":[{"type":"open_long","number":89,"text":"כמה שעות מסך הילד/ה צופה/משתמש ביום ממוצע?"},{"type":"likert","number":90,"text":"הילד/ה משחק/ת בקונסלת משחקים / מחשב או משחקים בטלפון בעיקר"},{"type":"likert","number":91,"text":"הילד/ה צופה בעיקר בתכנים מבוקרים (סרטים, סדרות לילדים)"},{"type":"likert","number":92,"text":"הילד/ה צופה ביוטיוב / טיקטוק / תוכן לא מבוקר"},{"type":"likert","number":93,"text":"הילד/ה מתפרץ/ת או מתקשה כשמגבילים את זמן המסך"},{"type":"likert","number":94,"text":"המסך משמש כעוגן רגיעה / אסקפיזם במצבים של חוסר יציבות רגשית או אחרי קונפליקט"},{"type":"likert","number":95,"text":"המסך מהווה נושא מרכזי בקונפליקטים בין ההורים לילד/ה"}]},{"title":"חלק ט׳ — לימודים, השוואה ודימוי עצמי","intro":"","subsections":[],"questions":[{"type":"likert","number":96,"text":"הילד/ה משווה את עצמו/ה ללימודים של ילדים אחרים"},{"type":"likert","number":97,"text":"הילד/ה תחרותי/ת בנוגע להישגים לימודיים"},{"type":"likert","number":98,"text":"הילד/ה מושפע/ת רגשית מהצלחה או כישלון בפעילויות תחרותיות (כגון ספורט, משחקים או תחביבים)"},{"type":"likert","number":99,"text":"הילד/ה מבטא קושי פיזי לימודי (הישארות בכיתה, ישיבה ממושכת על הכסא)"},{"type":"likert","number":100,"text":"בתחומי העניין שלו/ה, הילד/ה מגלה מסוגלות פיזית טובה (ריכוז, ישיבה ממושכת, שליטה גופנית)"},{"type":"likert","number":101,"text":"תחושות של חוסר ביטחון לימודי מעסיקות את הילד/ה ומשפיעות על התמודדותו/ה עם משימות לימודיות"},{"type":"likert","number":102,"text":"הילד/ה משתתף/ת בפעילות ספורטיבית או חוגית באופן עקבי"}]},{"title":"חלק י׳ — שינה","intro":"","subsections":[],"questions":[{"type":"likert","number":103,"text":"הילד/ה הולך/ת לישון בשעה קבועה"},{"type":"likert","number":104,"text":"הילד/ה זקוק/ה לליווי הורי כדי להירדם (הורה בחדר, נצמד/ת, אוחז/ת ביד)"},{"type":"likert","number":105,"text":"הילד/ה מתקשה להירדם (לרוב מעל 30 דקות), וההירדמות מלווה בתסכול, מצוקה או תלות באחר"},{"type":"likert","number":106,"text":"הילד/ה מתעורר/ת באמצע הלילה לפחות פעם בשבוע"},{"type":"likert","number":107,"text":"הילד/ה חווה חלומות רעים או סיוטים"},{"type":"likert","number":108,"text":"הילד/ה מתקשה לקום בבוקר ונראה/ית עייף/ה במהלך היום"},{"type":"likert","number":109,"text":"הילד/ה מבקש/ת לישון עם אור דלוק (פחד מחושך)"}]},{"title":"חלק יא׳ — חרדות, פחדים ודאגות","intro":"","subsections":[],"questions":[{"type":"likert","number":110,"text":"הילד/ה מבטא/ת חרדת פרידה (קושי להיפרד מהורה, בכי בפרידה, חזרה מרובה לחיבוקים)"},{"type":"likert","number":111,"text":"הילד/ה מגלה פחדים ספציפיים שמשבשים תפקוד (חיות, גובה, מים, רופאים, חושך)"},{"type":"likert","number":112,"text":"הילד/ה מודאג/ת מסיטואציות חברתיות (הופעה מול קבוצה, הצטרפות לפעילות חדשה, אירוח)"},{"type":"likert","number":113,"text":"הילד/ה מבקש/ת הרגעה חוזרת ונשנית מהורה (״מה אם...?״, ״האם זה יהיה בסדר?״)"},{"type":"likert","number":114,"text":"הילד/ה מבטא/ת תלונות גופניות לפני אירועים מלחיצים (כאבי בטן, ראש, בחילה)"},{"type":"likert","number":115,"text":"הילד/ה מבטא/ת עצב, חוסר אונים או ״אין לי כוח״ באופן חוזר"}]},{"title":"חלק יב׳ — מערכת הישרדות, דריכות ותלות","intro":"","subsections":[],"questions":[{"type":"likert","number":116,"text":"הילד/ה נראה/ית דרוך/ה או ״על המשמר״ במצבים יומיומיים (קשה להירגע, סורק/ת את הסביבה)"},{"type":"likert","number":117,"text":"הילד/ה מגיב/ה בעוצמה לרעשים פתאומיים, אזעקות או שינויים סביבתיים"},{"type":"likert","number":118,"text":"הילד/ה מציג/ה דריכות מוגברת מאז אירוע משמעותי או תקופה מלחיצה (מלחמה, מעבר, אובדן)"},{"type":"likert","number":119,"text":"הילד/ה נצמד/ת להורים בעוצמה גבוהה גם במצבים שגרתיים ובטוחים"}]},{"title":"חלק יג׳ — חוזקות ועמידות","intro":"","subsections":[],"questions":[{"type":"likert","number":120,"text":"הילד/ה מתמיד/ה במשימה גם כשהיא מאתגרת"},{"type":"likert","number":121,"text":"הילד/ה מצליח/ה להתאושש לאחר אכזבה, תסכול או כישלון"},{"type":"likert","number":122,"text":"הילד/ה משתמש/ת בהומור באופן בריא (לא ציני או פוגע)"},{"type":"likert","number":123,"text":"יש פעילות שבה הילד/ה מצליח/ה לתפקד היטב לאורך זמן (חוג, תחביב, יצירה)"},{"type":"likert","number":124,"text":"הילד/ה מצליח/ה לבקש עזרה כשהוא/היא זקוק/ה לה"}]},{"title":"חלק יד׳ — תמונה כללית וכיווני התהליך","intro":"החלק הזה הוא מקום לשתף בחופשיות. אין מספר נכון של מילים — 1–3 משפטים מספיקים.","subsections":[],"questions":[{"type":"checkbox","number":1,"label":"מה הקושי המרכזי שמעסיק אתכם כיום בקשר לילד/ה? (אפשר לסמן יותר מאחד)","options":["חרדה / פחדים","תוקפנות / אלימות","קושי בוויסות רגשי (התפרצויות)","קושי חברתי / חרם","שימוש מוגזם במסכים / התמכרות","הפרעות שינה","קושי במסגרת החינוכית","דימוי עצמי שלילי / חוסר ביטחון","קושי בריכוז / תפקודי קשב","קושי בתפקודים ניהוליים (ארגון, יזימה)","התנהגות מתנגדת / חוצפה","חוסר גמישות / נוקשות","רגישות סנסורית","תלונות גופניות (כאבי בטן/ראש)","הרטבה / רגרסיה","תלות יתר בהורה","קושי בלימודים / השוואה","דאגה ממראה / משקל","דריכות / מתח כללי","אחר"]},{"type":"open_long","number":2,"text":"אם יש מאבק יומיומי על היציאה למסגרת — כיצד אתם מסבירים לעצמכם את הסיבות העיקריות? (התנהגותי / רגשי / קושי בתפקודים ניהוליים / לוגיסטי / משהו אחר — תארו)"},{"type":"open_long","number":3,"text":"האם יש אירוע טראומתי, תקופה או שינוי משמעותי שכדאי שנדע עליו?"},{"type":"checkbox","number":4,"label":"מה הייתם רוצים שאתם ו/או הילד/ה ירוויח/תרוויח מהתהליך הזה? (אפשר לסמן יותר מאחד)","options":["הפחתה של התפרצויות זעם","שיפור היכולת לבטא רגשות","שיפור היחסים החברתיים","חיזוק דימוי עצמי וביטחון","שיפור תפקוד במסגרת החינוכית","הפחתת חרדה / פחדים","שיפור איכות השינה","הפחתת זמן מסכים / איזון בשימוש","שיפור היחסים בבית","כלים להורות מותאמת","שיפור התמודדות עם תסכול","שיפור היכולת לקבל גבולות","חיזוק העצמאות","שיפור היחסים בין האחים","הפחתת חרם / שיפור קשרים חברתיים","שיפור היכולת לבקש עזרה","חיבור לחוזקות ותחומי עניין","כלים להתמודדות עם אירוע משמעותי / טראומה","שיפור הוויסות העצמי הרגשי","אחר"]},{"type":"open_long","number":5,"text":"משהו נוסף שלא נשאל כאן ושאתם מרגישים שחשוב שנדע?"},{"type":"open_long","number":6,"text":"אם הייתם צריכים להגדיר 1–3 שינויים מרכזיים שאתם רוצים שיקרו בסיום התהליך — מה הם?"}]}];
+
+const STORAGE_KEY = 'parent_questionnaire_v4';
+const answers = {}; // { qid: value }
+
+// Build flat list
+const flatQuestions = [];
+DATA.forEach((sec, si) => {
+  sec.questions.forEach((q, qi) => {
+    flatQuestions.push({id: `s${si}_q${qi}`, sec, si, q, qi, ss: null, ssi: -1});
+  });
+  (sec.subsections || []).forEach((ss, ssi) => {
+    ss.questions.forEach((q, qi) => {
+      flatQuestions.push({id: `s${si}_ss${ssi}_q${qi}`, sec, si, q, qi, ss, ssi});
+    });
+  });
+});
+
+function loadAnswers() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      Object.assign(answers, parsed);
+    }
+  } catch (e) { /* ignore */ }
+}
+function saveAnswers() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(answers)); }
+  catch (e) { /* ignore */ }
+}
+
+function escapeHTML(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function isAnswered(item) {
+  const v = answers[item.id];
+  if (v == null) return false;
+  if (item.q.type === 'checkbox') return Array.isArray(v) && v.length > 0;
+  if (typeof v === 'string') return v.trim().length > 0;
+  return v !== '';
+}
+
+function renderQuestion(item) {
+  const {id, q} = item;
+  const text = q.text || q.label || '';
+  const answered = isAnswered(item);
+  const klass = answered ? 'q answered' : 'q';
+  const num = q.number != null ? q.number : '';
+  let input = '';
+
+  if (q.type === 'likert') {
+    const v = answers[id] || '';
+    const opts = [5,4,3,2,1].map(n => {
+      const checked = String(v) === String(n) ? 'checked' : '';
+      return `<input type="radio" name="${id}" id="${id}_${n}" value="${n}" ${checked} onchange="setAnswer('${id}', this.value)">
+              <label for="${id}_${n}">${n}</label>`;
+    }).join('');
+    input = `<div class="likert-input">
+      <span class="likert-end">תמיד</span>
+      <div class="likert-options">${opts}</div>
+      <span class="likert-end high">אף פעם</span>
+    </div>`;
+  } else if (q.type === 'checkbox') {
+    const current = Array.isArray(answers[id]) ? answers[id] : [];
+    input = '<div class="checkbox-input">' +
+      (q.options || []).map(o => {
+        const checked = current.includes(o) ? 'checked' : '';
+        const cls = current.includes(o) ? 'checked' : '';
+        return `<label class="${cls}"><input type="checkbox" value="${escapeHTML(o)}" ${checked} onchange="toggleCheckbox('${id}', this.value, this.checked)"> ${escapeHTML(o)}</label>`;
+      }).join('') +
+      '</div>';
+  } else if (q.type === 'open_short') {
+    const v = answers[id] || '';
+    input = `<input type="text" class="text-input" value="${escapeHTML(v)}" oninput="setAnswer('${id}', this.value)" placeholder="התשובה שלכם...">`;
+  } else if (q.type === 'open_long') {
+    const v = answers[id] || '';
+    input = `<textarea class="text-input" oninput="setAnswer('${id}', this.value)" placeholder="התשובה שלכם (1–3 משפטים)...">${escapeHTML(v)}</textarea>`;
+  }
+
+  const numLabel = num !== '' ? `<span class="q-num">${num}</span>` : '';
+
+  return `<div class="${klass}" data-qid="${id}">
+    <div>${numLabel}<span class="q-text">${escapeHTML(text)}</span></div>
+    ${input}
+  </div>`;
+}
+
+function render() {
+  const content = document.getElementById('content');
+  let html = '';
+  DATA.forEach((sec, si) => {
+    let secTotal = sec.questions.length + (sec.subsections || []).reduce((a, ss) => a + ss.questions.length, 0);
+    let secAnswered = 0;
+    sec.questions.forEach((_, qi) => { if (isAnswered({id: `s${si}_q${qi}`, q: sec.questions[qi]})) secAnswered++; });
+    (sec.subsections || []).forEach((ss, ssi) => ss.questions.forEach((_, qi) => {
+      if (isAnswered({id: `s${si}_ss${ssi}_q${qi}`, q: ss.questions[qi]})) secAnswered++;
+    }));
+
+    html += `<section class="section" id="sec-${si}">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">${escapeHTML(sec.title)}</h2>
+          ${sec.intro ? `<div class="section-intro">${escapeHTML(sec.intro)}</div>` : ''}
+        </div>
+        <div class="section-stats">
+          <span class="pill">${secAnswered}/${secTotal} נענו</span>
+        </div>
+      </div>`;
+
+    if (sec.subsections && sec.subsections.length > 0) {
+      if (sec.questions.length > 0) {
+        html += '<div class="questions">';
+        sec.questions.forEach((q, qi) => {
+          html += renderQuestion({id: `s${si}_q${qi}`, q});
+        });
+        html += '</div>';
+      }
+      sec.subsections.forEach((ss, ssi) => {
+        html += `<div class="subsection-title">${escapeHTML(ss.title)}</div><div class="questions">`;
+        ss.questions.forEach((q, qi) => {
+          html += renderQuestion({id: `s${si}_ss${ssi}_q${qi}`, q});
+        });
+        html += '</div>';
+      });
+    } else {
+      html += '<div class="questions">';
+      sec.questions.forEach((q, qi) => {
+        html += renderQuestion({id: `s${si}_q${qi}`, q});
+      });
+      html += '</div>';
+    }
+    html += '</section>';
+  });
+  content.innerHTML = html;
+}
+
+function renderNav() {
+  const nav = document.getElementById('section-nav');
+  let html = '';
+  DATA.forEach((sec, si) => {
+    const total = sec.questions.length + (sec.subsections || []).reduce((a, ss) => a + ss.questions.length, 0);
+    let answered = 0;
+    sec.questions.forEach((_, qi) => { if (isAnswered({id: `s${si}_q${qi}`, q: sec.questions[qi]})) answered++; });
+    (sec.subsections || []).forEach((ss, ssi) => ss.questions.forEach((_, qi) => {
+      if (isAnswered({id: `s${si}_ss${ssi}_q${qi}`, q: ss.questions[qi]})) answered++;
+    }));
+    const cls = answered === total ? 'complete' : (answered > 0 ? 'partial' : '');
+    const shortTitle = sec.title.replace(/^חלק\s*/, '').replace(/—.*$/, '').trim();
+    html += `<a href="#sec-${si}" class="nav-pill ${cls}"><span class="dot"></span>${escapeHTML(shortTitle || sec.title)}<small style="opacity:.5;margin-inline-start:4px;">${answered}/${total}</small></a>`;
+  });
+  nav.innerHTML = html;
+}
+
+function updateStats() {
+  let answered = 0;
+  const total = flatQuestions.length;
+  flatQuestions.forEach(item => { if (isAnswered(item)) answered++; });
+  document.getElementById('stat-answered').textContent = answered;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('strip-count').textContent = answered;
+  document.getElementById('prog-bar').style.width = (answered / total * 100) + '%';
+}
+
+function setAnswer(qid, value) {
+  answers[qid] = value;
+  saveAnswers();
+  // Update the card class only
+  const el = document.querySelector(`[data-qid="${qid}"]`);
+  const item = flatQuestions.find(x => x.id === qid);
+  if (el && item) el.classList.toggle('answered', isAnswered(item));
+  updateStats();
+  renderNav();
+}
+
+function toggleCheckbox(qid, value, checked) {
+  if (!Array.isArray(answers[qid])) answers[qid] = [];
+  if (checked && !answers[qid].includes(value)) answers[qid].push(value);
+  else if (!checked) answers[qid] = answers[qid].filter(v => v !== value);
+  saveAnswers();
+  // Re-render this card to update label classes
+  const el = document.querySelector(`[data-qid="${qid}"]`);
+  const item = flatQuestions.find(x => x.id === qid);
+  if (el && item) {
+    el.outerHTML = renderQuestion(item);
+  }
+  updateStats();
+  renderNav();
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function resetAll() {
+  if (!confirm('לאפס את כל התשובות? פעולה זו אינה הפיכה.')) return;
+  Object.keys(answers).forEach(k => delete answers[k]);
+  saveAnswers();
+  render();
+  renderNav();
+  updateStats();
+  toast('כל התשובות אופסו');
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+}
+
+function exportJSON() {
+  const out = {
+    completedAt: new Date().toISOString(),
+    answeredCount: flatQuestions.filter(isAnswered).length,
+    totalCount: flatQuestions.length,
+    sections: DATA.map((sec, si) => ({
+      title: sec.title,
+      questions: [
+        ...sec.questions.map((q, qi) => ({
+          number: q.number, type: q.type,
+          text: q.text || q.label,
+          answer: answers[`s${si}_q${qi}`] || null
+        })),
+        ...(sec.subsections || []).flatMap((ss, ssi) => ss.questions.map((q, qi) => ({
+          subsection: ss.title,
+          type: q.type, text: q.text || q.label,
+          answer: answers[`s${si}_ss${ssi}_q${qi}`] || null
+        })))
+      ]
+    }))
+  };
+  const blob = new Blob([JSON.stringify(out, null, 2)], {type: 'application/json'});
+  downloadBlob(blob, 'תשובות_שאלון_הורים.json');
+  toast('✓ קובץ התשובות נשמר');
+}
+
+function buildAnsweredHTML() {
+  const css = `
+    body { font-family: 'David', 'Times New Roman', serif; font-size: 12pt; line-height: 1.55; direction: rtl; text-align: right; }
+    h1 { font-size: 18pt; font-weight: bold; margin: 0 0 6pt 0; }
+    h2 { font-size: 14pt; font-weight: bold; color: #444; margin: 18pt 0 8pt 0; border-bottom: 1px solid #ccc; padding-bottom: 4pt; }
+    h3 { font-size: 12pt; font-weight: bold; margin: 12pt 0 6pt 0; }
+    p { margin: 6pt 0; }
+    .intro { color: #555; font-style: italic; }
+    .question { margin: 10pt 0; }
+    .q-text { font-weight: bold; }
+    .answer { color: #1a4d2e; padding-inline-start: 12pt; }
+    .empty-answer { color: #999; font-style: italic; }
+  `;
+  let html = `<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8"><title>תשובות שאלון הורים</title><style>${css}</style></head><body>`;
+  html += `<h1>תשובות לשאלון — הכרת הילד/ה</h1>`;
+  html += `<p class="intro">גילאי 5–10 · נמלא ב-${new Date().toLocaleDateString('he-IL')}</p>`;
+
+  DATA.forEach((sec, si) => {
+    html += `<h2>${escapeHTML(sec.title)}</h2>`;
+    if (sec.intro) html += `<p class="intro">${escapeHTML(sec.intro)}</p>`;
+
+    function renderAns(q, id) {
+      const v = answers[id];
+      const text = q.text || q.label;
+      const num = q.number != null ? `${q.number}. ` : '';
+      let answer = '';
+      if (q.type === 'likert') {
+        answer = v ? `תשובה: ${v}` : '<span class="empty-answer">— לא נענה —</span>';
+      } else if (q.type === 'checkbox') {
+        answer = Array.isArray(v) && v.length > 0 ? v.join(' · ') : '<span class="empty-answer">— לא נענה —</span>';
+      } else {
+        answer = (v && v.trim()) ? escapeHTML(v).replace(/\n/g, '<br>') : '<span class="empty-answer">— לא נענה —</span>';
+      }
+      return `<p class="question"><span class="q-text">${num}${escapeHTML(text)}</span></p><p class="answer">${answer}</p>`;
+    }
+
+    sec.questions.forEach((q, qi) => { html += renderAns(q, `s${si}_q${qi}`); });
+    (sec.subsections || []).forEach((ss, ssi) => {
+      html += `<h3>${escapeHTML(ss.title)}</h3>`;
+      ss.questions.forEach((q, qi) => { html += renderAns(q, `s${si}_ss${ssi}_q${qi}`); });
+    });
+  });
+  html += `</body></html>`;
+  return html;
+}
+
+function exportWord() {
+  const html = buildAnsweredHTML();
+  try {
+    if (typeof htmlDocx !== 'undefined' && htmlDocx.asBlob) {
+      const blob = htmlDocx.asBlob(html, {orientation: 'portrait', margins: {top: 720, bottom: 720, left: 720, right: 720}});
+      downloadBlob(blob, 'תשובות_שאלון_הורים.docx');
+      toast('✓ קובץ Word נשמר');
+      return;
+    }
+  } catch (e) { /* fallback */ }
+  const docHTML = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">${html.replace(/^<!DOCTYPE[^>]*>|<\/?html[^>]*>/gi,'')}</html>`;
+  const blob = new Blob(['﻿', docHTML], {type: 'application/msword'});
+  downloadBlob(blob, 'תשובות_שאלון_הורים.doc');
+  toast('✓ קובץ Word נשמר');
+}
+
+// Init
+(function init() {
+  loadAnswers();
+  render();
+  renderNav();
+  updateStats();
+})();
+</script>
+</body>
+</html>

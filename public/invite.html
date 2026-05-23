@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>הזמנה לשאלון — וואטסאפ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;800&family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFF9F1; --bg-card:#FFFFFF; --bg-elev:#FDFBF6;
+  --ink:#1F1B16; --ink-soft:#4A4339; --ink-mute:#8B8377;
+  --rule:#F0E8DC; --rule-soft:#F8F0E2;
+  --accent:#E76F51; --accent-deep:#C2553A; --accent-light:#F4A261;
+  --wa:#25D366; --wa-deep:#128C7E;
+  --grad-warm:linear-gradient(135deg,#E76F51,#F4A261,#E9C46A);
+  --grad-sunset:linear-gradient(135deg,#E76F51,#C2553A);
+  --grad-wa:linear-gradient(135deg,#25D366,#128C7E);
+  --shadow-md:0 4px 14px rgba(31,27,22,.06),0 2px 4px rgba(31,27,22,.05);
+  --shadow-lg:0 18px 44px rgba(31,27,22,.14),0 4px 12px rgba(31,27,22,.06);
+  --shadow-wa:0 10px 28px rgba(37,211,102,.32);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:"Heebo",-apple-system,"Segoe UI","David",sans-serif;font-size:16px;line-height:1.55}
+body{background:
+  radial-gradient(at 85% -8%,rgba(37,211,102,.10),transparent 50%),
+  radial-gradient(at 12% 100%,rgba(231,111,81,.10),transparent 50%),
+  var(--bg);background-attachment:fixed;min-height:100vh;padding:30px 20px 60px}
+h1,h2,h3{font-family:"Frank Ruhl Libre","David",serif;font-weight:700;letter-spacing:-.015em;margin:0}
+
+.wrap{max-width:880px;margin:0 auto}
+.hero{text-align:center;margin-bottom:32px;animation:fadeUp .55s cubic-bezier(.16,1,.3,1)}
+.hero .emoji{font-size:64px;display:inline-block;margin-bottom:8px;animation:bounce 3s ease-in-out infinite}
+.hero h1{font-size:34px;background:var(--grad-warm);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:8px;line-height:1.2}
+.hero p{color:var(--ink-soft);font-size:15px;margin:0;max-width:520px;margin:0 auto}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+
+.card{background:var(--bg-card);border-radius:20px;padding:24px;box-shadow:var(--shadow-md);position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--grad-warm)}
+.card.preview::before{background:var(--grad-wa)}
+
+.card h2{font-size:20px;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.card .desc{color:var(--ink-mute);font-size:13px;margin-bottom:16px}
+
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;color:var(--ink-soft);margin-bottom:6px;font-weight:600}
+.field input,.field textarea{width:100%;padding:12px 14px;border:1.5px solid var(--rule);border-radius:12px;
+  background:var(--bg-elev);color:var(--ink);outline:none;transition:.2s;font-family:inherit;font-size:14px;line-height:1.6}
+.field input:focus,.field textarea:focus{border-color:var(--accent);background:white;box-shadow:0 0 0 3px rgba(231,111,81,.10)}
+.field textarea{min-height:200px;resize:vertical}
+.field .hint{font-size:12px;color:var(--ink-mute);margin-top:6px}
+
+.template-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.template-chip{padding:6px 12px;background:transparent;border:1.5px solid var(--rule);border-radius:999px;
+  color:var(--ink-soft);font-size:12px;font-weight:500;cursor:pointer;transition:.15s;font-family:inherit}
+.template-chip:hover{background:var(--rule-soft);border-color:var(--accent);color:var(--accent)}
+.template-chip.active{background:var(--grad-sunset);color:white;border-color:transparent;box-shadow:0 4px 12px rgba(231,111,81,.3)}
+
+.preview-screen{background:#E5DDD5;border-radius:14px;padding:20px;min-height:280px;
+  background-image:radial-gradient(circle at 50% 50%,rgba(255,255,255,.4),transparent 70%)}
+.preview-bubble{background:#DCF8C6;padding:14px 16px;border-radius:14px 14px 14px 4px;
+  max-width:88%;margin-inline-start:auto;box-shadow:0 1px 1px rgba(0,0,0,.08);font-size:14px;line-height:1.55;white-space:pre-wrap;word-break:break-word;color:#222}
+.preview-bubble .url{color:#039BE5;text-decoration:underline;display:block;margin-top:10px;font-size:13px}
+.preview-time{font-size:11px;color:#667781;text-align:end;margin-top:4px}
+
+.actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.btn{padding:13px 20px;border-radius:12px;font-weight:600;font-size:15px;border:none;cursor:pointer;
+  transition:.2s;display:inline-flex;align-items:center;gap:8px;font-family:inherit}
+.btn-wa{background:var(--grad-wa);color:white;flex:1;justify-content:center;box-shadow:var(--shadow-wa)}
+.btn-wa:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(37,211,102,.42)}
+.btn-wa svg{width:20px;height:20px;fill:white}
+.btn-copy{background:transparent;color:var(--ink-soft);border:1.5px solid var(--rule)}
+.btn-copy:hover{border-color:var(--accent);color:var(--ink)}
+.btn-copy.success{background:rgba(67,170,139,.1);border-color:#43AA8B;color:#43AA8B}
+
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-30px);
+  background:var(--ink);color:white;padding:12px 22px;border-radius:10px;font-size:14px;z-index:100;
+  opacity:0;pointer-events:none;transition:.25s;box-shadow:var(--shadow-lg)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.tip{background:linear-gradient(135deg,rgba(231,111,81,.06),rgba(244,162,97,.04));border-radius:14px;
+  padding:14px 18px;margin-top:20px;font-size:13px;color:var(--ink-soft);line-height:1.7;border:1px dashed var(--rule)}
+.tip strong{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="emoji">💬</div>
+    <h1>הזמנת הורים לשאלון</h1>
+    <p>צרו לינק שיתוף לוואטסאפ — עם הודעה אישית שמושכת ומעוררת אמון.</p>
+  </div>
+
+  <div class="grid">
+
+    <!-- LEFT: Editor -->
+    <div>
+
+      <div class="card">
+        <h2>🔗 כתובת השאלון</h2>
+        <div class="desc">הקישור שאליו ההורים יוזרמו (יצרף "#register" כדי שהלחיצה תפתח ישר את מסך ההרשמה)</div>
+        <div class="field">
+          <label>URL מלא של האפליקציה</label>
+          <input type="url" id="url-input" placeholder="https://your-domain.com/שאלון_הורים_אפליקציה.html" value="https://your-domain.com/parents-app.html">
+          <div class="hint">ניתן להעלות לחינם ל-Netlify Drop / GitHub Pages / Cloudflare Pages</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <h2>✍️ הודעת ההזמנה</h2>
+        <div class="desc">לחצו על תבנית או ערכו ידנית</div>
+        <div class="template-row">
+          <button class="template-chip active" data-tmpl="empathic">אמפתי</button>
+          <button class="template-chip" data-tmpl="punch">פאנץ׳</button>
+          <button class="template-chip" data-tmpl="warm">חם ועדין</button>
+          <button class="template-chip" data-tmpl="professional">מקצועי</button>
+        </div>
+        <div class="field">
+          <label>תוכן ההודעה</label>
+          <textarea id="msg-input"></textarea>
+          <div class="hint"><strong>{URL}</strong> יוחלף אוטומטית בכתובת השאלון</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Preview + Actions -->
+    <div>
+
+      <div class="card preview">
+        <h2>📱 איך זה ייראה</h2>
+        <div class="desc">תצוגה מקדימה של ההודעה בוואטסאפ</div>
+        <div class="preview-screen">
+          <div class="preview-bubble" id="preview-bubble"></div>
+          <div class="preview-time">10:42 ✓✓</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <h2>🚀 שליחה</h2>
+        <div class="actions">
+          <button class="btn btn-wa" id="btn-wa">
+            <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+            פתח בוואטסאפ
+          </button>
+          <button class="btn btn-copy" id="btn-copy-msg">📋 העתק הודעה</button>
+          <button class="btn btn-copy" id="btn-copy-link">🔗 העתק לינק שיתוף</button>
+        </div>
+
+        <div class="tip">
+          <strong>טיפ:</strong> ההודעה תיפתח בוואטסאפ ותציע לבחור מי לשלוח. אפשר גם להעתיק את הקישור (wa.me/...) ולשתף אותו ברשתות חברתיות, מייל או SMS.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const TEMPLATES = {
+  empathic: `שלום 💛
+
+לפעמים הורות מרגישה כמו לפתור פאזל בעיניים סגורות 🧩
+אם יש קושי שמטריד אתכם בקשר לילד/ה — אתם לא לבד.
+
+🌈 שאלון מקצועי לגילאי 5–10:
+✓ 20 דקות שיעשו לכם סדר
+✓ מבוסס מחקר מקצועי
+✓ סיכום אישי + תכנית מותאמת בסיום
+
+מתחילים כאן 👇
+{URL}`,
+  punch: `🛑 רגע — לפני שאתם ממשיכים לרוץ ביום:
+
+האם יש משהו בילד/ה שלכם שמטריד? כעסים? שינה? חברה? מסכים?
+
+✋ הגיע הזמן לעצור ולהבין.
+
+🌈 שאלון מקצועי לגילאי 5–10:
+20 דקות → תמונה מלאה → תכנית מותאמת אישית
+
+👇
+{URL}`,
+  warm: `היי הורים יקרים 🌷
+
+אני יודעת שזה לא קל. ההורות מביאה איתה גם שמחות וגם קשיים שלא תמיד מדברים עליהם.
+
+הכנתי בשבילכם שאלון מותאם לגילאי 5–10 — מקום בטוח להסתכל יחד על מה שקורה, ולקבל בסוף תכנית אישית עם כיוונים ברורים.
+
+20 דקות. בקצב שלכם. בכנות מלאה. 💛
+
+לתחילת השאלון:
+{URL}`,
+  professional: `שלום,
+
+מצורף קישור לשאלון אבחוני להכרת הילד/ה (גילאי 5–10):
+
+📋 מה זה כולל:
+• 14 חלקים — רגש, חברה, ויסות, שינה, חרדות, חוזקות ועוד
+• מבוסס כלים מתוקפים (CSHQ, BRIEF, SCARED)
+• זמן מילוי: כ-20 דקות
+• דוח אישי + המלצות בסיום
+
+🔗 התחלה:
+{URL}
+
+לכל שאלה — אני זמינה.`
+};
+
+const $ = id => document.getElementById(id);
+const urlInput = $('url-input');
+const msgInput = $('msg-input');
+const previewBubble = $('preview-bubble');
+
+let currentTemplate = 'empathic';
+msgInput.value = TEMPLATES.empathic;
+
+function buildFullURL() {
+  let u = urlInput.value.trim();
+  if (!u) return '';
+  // Ensure hash for direct register
+  if (!u.includes('#')) u += '#register';
+  return u;
+}
+function buildFinalMessage() {
+  return msgInput.value.replace(/\{URL\}/g, buildFullURL());
+}
+function buildWAUrl() {
+  return 'https://wa.me/?text=' + encodeURIComponent(buildFinalMessage());
+}
+function updatePreview() {
+  const text = buildFinalMessage();
+  // Replace URL with linkified version for preview
+  const u = buildFullURL();
+  const safe = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  previewBubble.innerHTML = u ? safe.replace(u, `<span class="url">${u}</span>`) : safe;
+}
+
+document.querySelectorAll('.template-chip').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('.template-chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+    currentTemplate = c.dataset.tmpl;
+    msgInput.value = TEMPLATES[currentTemplate];
+    updatePreview();
+  });
+});
+
+urlInput.addEventListener('input', updatePreview);
+msgInput.addEventListener('input', updatePreview);
+
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+function copyToClipboard(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.classList.add('success');
+      btn.innerHTML = '✓ הועתק';
+      setTimeout(() => { btn.classList.remove('success'); btn.innerHTML = orig; }, 1800);
+    }
+  }).catch(() => toast('שגיאה בהעתקה'));
+}
+
+$('btn-wa').addEventListener('click', () => {
+  if (!urlInput.value.trim()) { toast('נדרשת כתובת לשאלון'); return; }
+  window.open(buildWAUrl(), '_blank');
+});
+$('btn-copy-msg').addEventListener('click', (e) => copyToClipboard(buildFinalMessage(), e.currentTarget));
+$('btn-copy-link').addEventListener('click', (e) => copyToClipboard(buildWAUrl(), e.currentTarget));
+
+// Load saved URL from localStorage
+const SAVED_URL = 'parentq_invite_url';
+const saved = localStorage.getItem(SAVED_URL);
+if (saved) urlInput.value = saved;
+urlInput.addEventListener('change', () => localStorage.setItem(SAVED_URL, urlInput.value));
+
+updatePreview();
+</script>
+
+</body>
+</html>
