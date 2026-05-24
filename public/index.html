@@ -925,18 +925,49 @@ $('register-form').addEventListener('submit', async (e) => {
       email, password: pass,
       options: { data: { full_name: name, child_name: childName, phone } }
     });
+    console.log('signUp result:', { data, error });
+
     if (error) {
-      err.textContent = error.message.includes('already') || error.message.includes('exists')
-        ? 'משתמש עם אימייל זה כבר קיים. נסו להיכנס.'
-        : `שגיאה: ${error.message}`;
+      const msg = (error.message || '').toLowerCase();
+      if (msg.includes('already') || msg.includes('exists') || msg.includes('registered')) {
+        err.textContent = 'משתמש עם אימייל זה כבר קיים. נסו להיכנס או לאפס סיסמה.';
+      } else if (msg.includes('weak') || msg.includes('password')) {
+        err.textContent = 'הסיסמה חלשה מדי. נסו סיסמה חזקה יותר.';
+      } else if (msg.includes('invalid email')) {
+        err.textContent = 'כתובת אימייל לא תקינה.';
+      } else {
+        err.textContent = `שגיאה: ${error.message}`;
+      }
       err.classList.add('show');
       return;
     }
-    if (!data.user) { err.textContent = 'שגיאת רישום לא צפויה.'; err.classList.add('show'); return; }
-    // Auto-login should happen via the signUp response. Wait briefly for the trigger to create the profile.
+
+    if (!data.user) {
+      err.textContent = 'שגיאת רישום — לא הוחזר משתמש. נסו שוב.';
+      err.classList.add('show');
+      return;
+    }
+
+    // Supabase's anti-enumeration: if email already exists with Confirm email ON,
+    // it returns a user object but with empty identities[].
+    if (Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      err.textContent = 'משתמש עם אימייל זה כבר קיים. נסו להיכנס או לאפס סיסמה.';
+      err.classList.add('show');
+      return;
+    }
+
+    // If "Confirm email" is enabled in Supabase, no session is returned — show success message.
+    if (!data.session) {
+      toast('✓ נשלח אליך מייל אישור. לחצו על הלינק במייל כדי להפעיל את החשבון, ואז התחברו.');
+      switchAuthForm('login');
+      $('login-username').value = email;
+      $('login-password').value = '';
+      return;
+    }
+
+    // Normal path: session active. Load profile (created by DB trigger).
     let profile = await loadProfile(data.user.id);
-    // Trigger sometimes races — retry once after a moment.
-    if (!profile) { await new Promise(r => setTimeout(r, 600)); profile = await loadProfile(data.user.id); }
+    if (!profile) { await new Promise(r => setTimeout(r, 700)); profile = await loadProfile(data.user.id); }
     if (!profile) {
       err.textContent = 'הרישום בוצע אבל לא הצלחנו לטעון את הפרופיל. נסו להתחבר.';
       err.classList.add('show');
@@ -944,6 +975,10 @@ $('register-form').addEventListener('submit', async (e) => {
     }
     state.user = profileToStateUser(profile, data.user.id);
     enterApp();
+  } catch (ex) {
+    console.error('signUp exception:', ex);
+    err.textContent = `שגיאת תקשורת: ${ex.message || ex}`;
+    err.classList.add('show');
   } finally {
     btn.disabled = false; btn.textContent = 'הרשמה והתחלת השאלון';
   }
@@ -959,10 +994,16 @@ $('login-form').addEventListener('submit', async (e) => {
   btn.disabled = true; btn.textContent = 'מתחבר…';
   try {
     const { data, error } = await sb.auth.signInWithPassword({ email: input, password: pass });
+    console.log('signIn result:', { data, error });
     if (error) {
-      err.textContent = error.message.toLowerCase().includes('invalid')
-        ? 'אימייל או סיסמה שגויים.'
-        : `שגיאה: ${error.message}`;
+      const msg = (error.message || '').toLowerCase();
+      if (msg.includes('not confirmed') || msg.includes('confirm')) {
+        err.textContent = 'המייל לא אושר עדיין. בדקו את תיבת הדואר ולחצו על לינק האישור, או בקשו לינק חדש דרך "שכחת סיסמה".';
+      } else if (msg.includes('invalid')) {
+        err.textContent = 'אימייל או סיסמה שגויים. אם נרשמת בגרסה קודמת — צריך להירשם מחדש.';
+      } else {
+        err.textContent = `שגיאה: ${error.message}`;
+      }
       err.classList.add('show');
       return;
     }
@@ -970,6 +1011,10 @@ $('login-form').addEventListener('submit', async (e) => {
     if (!profile) { err.textContent = 'נכנסת אבל הפרופיל לא נמצא. צרו קשר עם התמיכה.'; err.classList.add('show'); return; }
     state.user = profileToStateUser(profile, data.user.id);
     enterApp();
+  } catch (ex) {
+    console.error('signIn exception:', ex);
+    err.textContent = `שגיאת תקשורת: ${ex.message || ex}`;
+    err.classList.add('show');
   } finally {
     btn.disabled = false; btn.textContent = 'כניסה';
   }
@@ -1026,18 +1071,22 @@ $('forgot-form').addEventListener('submit', async (e) => {
   const btn = e.target.querySelector('button[type="submit"]');
   btn.disabled = true; btn.textContent = 'שולח…';
   try {
-    // Supabase sends an email with a magic link. When the user clicks it,
-    // they return to our app with an active session — we then ask for a new password.
     const redirectTo = window.location.origin + window.location.pathname + '#reset-password';
     const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
+    console.log('resetPasswordForEmail result:', { error });
     if (error) {
       err.textContent = `שגיאה: ${error.message}`;
       err.classList.add('show');
       return;
     }
-    toast('✓ נשלח אימייל עם לינק לאיפוס סיסמה. בדקו את תיבת הדואר.');
+    // Supabase doesn't tell us if the email exists (anti-enumeration). Always show success.
+    toast('✓ אם האימייל רשום, נשלח אליו לינק לאיפוס. בדקו את תיבת הדואר (כולל ספאם).');
     switchAuthForm('login');
     $('login-username').value = email;
+  } catch (ex) {
+    console.error('reset exception:', ex);
+    err.textContent = `שגיאת תקשורת: ${ex.message || ex}`;
+    err.classList.add('show');
   } finally {
     btn.disabled = false; btn.textContent = '📧 שלח לינק לאיפוס';
   }
