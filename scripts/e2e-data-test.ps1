@@ -353,6 +353,30 @@ try {
   $swuNon = Invoke-Http -Method GET -Url ("{0}/rest/v1/submissions_with_user?select=id" -f $BASE) -Headers $hUser2
   $swuN = if ($swuNon.Json) { @($swuNon.Json).Count } else { 0 }
   Check 'demoted non-admin sees 0 submissions via view (RLS applies)' ($swuN -eq 0) ("got {0} rows" -f $swuN)
+
+  # ============================================================
+  # 18) Google-style signup: trigger name fallback + child_name completion
+  # ============================================================
+  Write-Host "`n[18] OAuth-style signup (name fallback) + complete-profile update"
+  $ts3 = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+  $email3 = ("e2e+oauth-{0}@example.com" -f $ts3); $pass3 = ("Pw_{0}!aB9" -f $ts3)
+  # Simulate Google: metadata has 'name' (not 'full_name'), no child_name
+  $cre = Invoke-Http -Method POST -Url ("{0}/auth/v1/admin/users" -f $BASE) -Headers $hSvc -Body @{ email = $email3; password = $pass3; email_confirm = $true; user_metadata = @{ name = 'OAuth Tester' } }
+  $uid3 = if ($cre.Json) { $cre.Json.id } else { $null }
+  Check 'oauth-style user created' ($null -ne $uid3) ("HTTP {0}: {1}" -f $cre.Code, $cre.Text)
+  if ($uid3) { $createdUserIds.Add($uid3) | Out-Null }
+  $p3 = Invoke-Http -Method GET -Url ("{0}/rest/v1/profiles?id=eq.{1}&select=full_name,child_name" -f $BASE, $uid3) -Headers $hSvc
+  $p3r = if ($p3.Json) { @($p3.Json)[0] } else { $null }
+  Check 'trigger name-fallback: full_name = metadata.name' ($p3r -and $p3r.full_name -eq 'OAuth Tester') ("got '{0}'" -f $(if($p3r){$p3r.full_name}))
+  Check 'oauth signup has empty child_name' ($p3r -and $p3r.child_name -eq '') ("got '{0}'" -f $(if($p3r){$p3r.child_name}))
+  # Complete-profile flow: user updates own child_name under RLS
+  $tok3 = Get-UserToken $email3 $pass3
+  $hUser3 = @{ apikey = $ANON; Authorization = ("Bearer {0}" -f $tok3) }
+  $cpUpd = Invoke-Http -Method PATCH -Url ("{0}/rest/v1/profiles?id=eq.{1}" -f $BASE, $uid3) -Headers $hUser3 -Body @{ child_name = 'Dana'; phone = '050-1112222' } -ExtraHeaders @('Prefer: return=representation')
+  Check 'user updates own child_name (RLS)' ($cpUpd.Code -ge 200 -and $cpUpd.Code -lt 300) ("HTTP {0}: {1}" -f $cpUpd.Code, $cpUpd.Text)
+  $p3b = Invoke-Http -Method GET -Url ("{0}/rest/v1/profiles?id=eq.{1}&select=child_name" -f $BASE, $uid3) -Headers $hUser3
+  $p3br = if ($p3b.Json) { @($p3b.Json)[0] } else { $null }
+  Check 'child_name persisted = Dana' ($p3br -and $p3br.child_name -eq 'Dana') ("got '{0}'" -f $(if($p3br){$p3br.child_name}))
 }
 catch {
   Write-Host ("`n[ERROR] {0}" -f $_.Exception.Message) -ForegroundColor Red

@@ -159,10 +159,12 @@ begin
   values (
     new.id,
     new.email,
-    coalesce(new.raw_user_meta_data->>'full_name',  ''),
+    -- OAuth providers (e.g. Google) put the name under 'name'; email signup uses 'full_name'
+    coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', ''),
     coalesce(new.raw_user_meta_data->>'child_name', ''),
     coalesce(new.raw_user_meta_data->>'phone',      '')
-  );
+  )
+  on conflict (id) do nothing;   -- never fail the signup if a profile already exists
   return new;
 end;
 $$;

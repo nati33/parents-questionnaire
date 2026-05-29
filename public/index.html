@@ -82,6 +82,15 @@ input,select,textarea{font-family:inherit;font-size:16px}
 .error-msg{color:var(--error);font-size:13px;margin-top:8px;background:var(--error-tint);
   padding:12px 14px;border-radius:10px;border:1px solid rgba(230,57,70,.2);display:none}
 .error-msg.show{display:block}
+/* OAuth (Google) */
+#oauth-block{margin-top:18px}
+.oauth-divider{display:flex;align-items:center;gap:12px;color:var(--ink-mute);font-size:13px;margin:4px 0 14px}
+.oauth-divider::before,.oauth-divider::after{content:'';flex:1;height:1px;background:var(--rule)}
+.btn-google{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:13px;background:#fff;color:var(--ink-soft);border:1.5px solid var(--rule);border-radius:12px;
+  font-weight:600;font-size:15px;transition:.2s}
+.btn-google:hover{border-color:var(--ink-mute);box-shadow:var(--shadow-sm);background:#fff}
+.btn-google svg{flex:none}
 .auth-helper{text-align:center;margin-top:14px}
 .link-btn{background:transparent;border:none;color:var(--accent);font-size:13px;font-weight:500;
   cursor:pointer;padding:6px 10px;border-radius:8px;transition:.15s}
@@ -564,6 +573,36 @@ input,select,textarea{font-family:inherit;font-size:16px}
       <div class="error-msg" id="reg-error"></div>
       <button type="submit" class="btn-primary">הרשמה והתחלת השאלון</button>
     </form>
+
+    <!-- Google OAuth (shared by login + register tabs) -->
+    <div id="oauth-block">
+      <div class="oauth-divider"><span>או</span></div>
+      <button type="button" class="btn-google" id="google-signin-btn">
+        <svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+        <span>המשך עם Google</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━ Complete profile (Google sign-ups missing child name) ━━━━━━━━━━━━━━━ -->
+<div id="complete-profile-screen" class="screen" style="justify-content:center;align-items:center;padding:24px 20px">
+  <div class="auth-card">
+    <div class="brand-mini">
+      <span class="icon-circle big-emoji">👶</span>
+      <h2>עוד פרט אחד קטן</h2>
+      <p>כדי להתאים את השאלון אישית — איך קוראים לילד/ה?</p>
+    </div>
+    <div class="field">
+      <label>שם הילד/ה</label>
+      <input type="text" id="cp-child-name" required placeholder="לדוגמה: יואב">
+    </div>
+    <div class="field">
+      <label>טלפון (אופציונלי)</label>
+      <input type="tel" id="cp-phone" autocomplete="tel">
+    </div>
+    <div class="error-msg" id="cp-error"></div>
+    <button type="button" class="btn-primary" id="cp-save">המשך</button>
   </div>
 </div>
 
@@ -1372,8 +1411,52 @@ function switchAuthForm(which) {
   $('forgot-form').style.display = which === 'forgot' ? '' : 'none';
   $('reset-form').style.display = which === 'reset' ? '' : 'none';
   document.querySelectorAll('.auth-tabs').forEach(t => t.style.display = (which === 'login' || which === 'register') ? '' : 'none');
+  const oauth = $('oauth-block');
+  if (oauth) oauth.style.display = (which === 'login' || which === 'register') ? '' : 'none';
   document.querySelectorAll('.error-msg').forEach(e => e.classList.remove('show'));
 }
+
+// Google OAuth — same flow for login and register. Returns to this page; the
+// profile is auto-created by the handle_new_user trigger from Google metadata.
+async function signInWithGoogle() {
+  try {
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: location.origin + location.pathname }
+    });
+    if (error) { toast('שגיאת התחברות ל-Google: ' + error.message, true); }
+  } catch (ex) { toast('שגיאת תקשורת מול Google', true); }
+}
+const _gbtn = document.getElementById('google-signin-btn');
+if (_gbtn) _gbtn.addEventListener('click', signInWithGoogle);
+
+// Complete-profile screen (collect child name for users who signed up without it)
+function showCompleteProfile() {
+  $('cp-child-name').value = (state.user && state.user.childName) || '';
+  $('cp-phone').value = (state.user && state.user.phone) || '';
+  $('cp-error').classList.remove('show');
+  show('complete-profile-screen');
+}
+$('cp-save').addEventListener('click', async () => {
+  const child = $('cp-child-name').value.trim();
+  const phone = $('cp-phone').value.trim();
+  const err = $('cp-error');
+  err.classList.remove('show');
+  if (!child) { err.textContent = 'נא להזין את שם הילד/ה.'; err.classList.add('show'); return; }
+  const btn = $('cp-save'); btn.disabled = true; btn.textContent = 'שומר…';
+  try {
+    const { error } = await sb.from('profiles').update({ child_name: child, phone }).eq('id', state.user.id);
+    if (error) throw error;
+    state.user.childName = child;
+    state.user.phone = phone;
+    enterApp();
+  } catch (ex) {
+    err.textContent = 'שגיאה בשמירה: ' + (ex.message || ex);
+    err.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = 'המשך';
+  }
+});
 function genCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
@@ -1457,6 +1540,12 @@ function enterApp() {
   // Admin → dedicated admin app (separate page; admin code is not shipped here)
   if (isAdminUser(state.user)) {
     location.href = 'admin.html';
+    return;
+  }
+
+  // Missing child name (e.g. Google sign-up) → collect it before the questionnaire
+  if (!state.user.childName || !state.user.childName.trim()) {
+    showCompleteProfile();
     return;
   }
 
