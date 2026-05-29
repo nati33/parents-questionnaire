@@ -13,6 +13,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main:   resolve(__dirname, 'public/index.html'),
+        admin:  resolve(__dirname, 'public/admin.html'),
         review: resolve(__dirname, 'public/review.html'),
         form:   resolve(__dirname, 'public/form.html'),
         invite: resolve(__dirname, 'public/invite.html'),

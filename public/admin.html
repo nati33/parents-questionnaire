@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1F1B16">
+<title>לוח אדמין — שאלון הורים</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;800&family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#FFF9F1; --bg-elev:#FFFFFF; --bg-card:#FFFFFF;
+  --ink:#1F1B16; --ink-soft:#4A4339; --ink-mute:#8B8377;
+  --rule:#F0E8DC; --rule-soft:#F8F0E2;
+  --accent:#E76F51; --accent-soft:#F4A261; --accent-deep:#C2553A;
+  --keep:#43AA8B; --keep-tint:#E6F4EE;
+  --error:#E63946; --error-tint:#FCE4E6;
+  --grad-sunset:linear-gradient(135deg,#E76F51,#C2553A);
+  --shadow-sm:0 1px 2px rgba(31,27,22,.05),0 1px 3px rgba(31,27,22,.06);
+  --shadow-md:0 4px 14px rgba(31,27,22,.06),0 2px 4px rgba(31,27,22,.05);
+  --shadow-lg:0 18px 44px rgba(31,27,22,.14),0 4px 12px rgba(31,27,22,.06);
+  --r:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;color:var(--ink);
+  font-family:"Heebo",-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;background:var(--bg);min-height:100vh}
+h1,h2,h3,h4{font-family:"Frank Ruhl Libre","David",serif;font-weight:700;margin:0}
+button{font-family:inherit;cursor:pointer;font-size:inherit}
+input{font-family:inherit;font-size:16px}
+.section-title{margin:26px 0 10px;font-size:1.15rem;color:var(--ink)}
+
+.admin-header{background:var(--ink);color:var(--bg);padding:18px 20px;position:sticky;top:0;z-index:20;box-shadow:var(--shadow-md)}
+.admin-header-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:16px}
+.admin-header h1{font-size:22px;color:white;margin:0}
+.admin-header small{color:rgba(255,255,255,.65);font-size:12px;display:block;margin-top:2px}
+.logout-link{color:rgba(255,255,255,.7);background:rgba(255,255,255,.08);border:none;cursor:pointer;padding:8px 12px;border-radius:8px}
+.logout-link:hover{background:rgba(255,255,255,.16);color:white}
+.admin-main{max-width:1100px;margin:0 auto;padding:24px 20px 80px}
+
+.admin-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:8px}
+.admin-stats.subs4{grid-template-columns:repeat(4,1fr)}
+.stat-card{background:var(--bg-card);border:1px solid var(--rule);border-radius:var(--r);padding:16px;text-align:center}
+.stat-card .num{font-family:"Frank Ruhl Libre",serif;font-size:30px;color:var(--accent);font-weight:700;line-height:1}
+.stat-card small{display:block;color:var(--ink-mute);font-size:12px;margin-top:4px}
+
+.admin-controls{display:flex;gap:10px;margin:14px 0 18px;flex-wrap:wrap}
+.text-input{flex:1;min-width:200px;padding:13px 16px;border:1.5px solid var(--rule);border-radius:12px;background:white;color:var(--ink);outline:none;transition:.2s}
+.text-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(231,111,81,.10)}
+.btn-secondary{padding:11px 16px;background:transparent;color:var(--ink-soft);border:1.5px solid var(--rule);border-radius:12px;font-weight:500;transition:.2s}
+.btn-secondary:hover{background:var(--bg-elev);border-color:var(--accent);color:var(--ink)}
+
+.submission-card{background:var(--bg-card);border:1px solid var(--rule);border-radius:var(--r);margin-bottom:10px;overflow:hidden;transition:.2s}
+.submission-card:hover{box-shadow:var(--shadow-md)}
+.submission-header{padding:14px 18px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:14px}
+.submission-info{flex:1;min-width:0}
+.submission-name{font-weight:600;color:var(--ink);font-size:16px;margin-bottom:3px}
+.submission-meta{font-size:12px;color:var(--ink-mute);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.pill{background:var(--bg-elev);border:1px solid var(--rule);padding:2px 8px;border-radius:999px;font-size:11px}
+.pill.complete{background:var(--keep-tint);border-color:#C8DAB1;color:var(--keep)}
+.pill.partial{background:#FEF6E4;border-color:#F0E1B5;color:#8B6F1A}
+.pill.admin{background:#EAE4FF;border-color:#CDBDF5;color:#5B3FB0}
+.submission-toggle{font-size:18px;color:var(--ink-mute);transition:transform .2s}
+.submission-card.expanded .submission-toggle{transform:rotate(180deg)}
+.submission-body{display:none;border-top:1px solid var(--rule);padding:18px;background:var(--bg-elev)}
+.submission-card.expanded .submission-body{display:block}
+.submission-section{margin-bottom:16px}
+.submission-section:last-child{margin-bottom:0}
+.submission-section h4{font-family:"Frank Ruhl Libre",serif;font-size:15px;color:var(--accent);margin:0 0 8px 0;border-bottom:1px dashed var(--rule);padding-bottom:5px}
+.submission-qa{padding:6px 0;font-size:14px;line-height:1.5}
+.submission-qa .q{color:var(--ink-soft)}
+.submission-qa .a{color:var(--ink);font-weight:600;margin-inline-start:8px}
+.submission-actions{display:flex;gap:6px;margin-top:14px;padding-top:14px;border-top:1px solid var(--rule);flex-wrap:wrap}
+.submission-actions button{background:transparent;border:1px solid var(--rule);color:var(--ink-soft);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;transition:.15s}
+.submission-actions button:hover{background:var(--bg-card);border-color:var(--accent-soft);color:var(--ink)}
+
+.user-row{display:flex;justify-content:space-between;align-items:center;gap:14px;background:var(--bg-card);border:1px solid var(--rule);border-radius:var(--r);padding:12px 16px;margin-bottom:8px}
+.user-row .u-name{font-weight:600;color:var(--ink)}
+.user-row .u-meta{font-size:12px;color:var(--ink-mute);display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:3px}
+.user-row .u-actions button{padding:8px 14px;border-radius:10px;border:1.5px solid var(--rule);background:transparent;font-weight:500;color:var(--ink-soft);transition:.15s;white-space:nowrap}
+.user-row .u-actions button.make:hover{border-color:var(--accent);color:var(--accent-deep)}
+.user-row .u-actions button.remove:hover{border-color:var(--error);color:var(--error)}
+
+.admin-empty{text-align:center;padding:40px 20px;color:var(--ink-mute);font-size:14px;background:var(--bg-elev);border:1px dashed var(--rule);border-radius:var(--r);line-height:1.6}
+
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-30px);background:var(--ink);color:var(--bg);padding:12px 22px;border-radius:10px;box-shadow:var(--shadow-lg);font-size:14px;z-index:100;opacity:0;pointer-events:none;transition:.25s;max-width:90%;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{background:var(--error)}
+
+.modal-backdrop{position:fixed;inset:0;background:rgba(31,27,22,.55);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:300;padding:20px}
+.modal-backdrop.show{display:flex}
+.modal{background:white;border-radius:22px;padding:28px 26px;max-width:420px;width:100%;box-shadow:var(--shadow-lg);text-align:center}
+.modal .modal-icon{font-size:48px;margin-bottom:10px}
+.modal h3{font-size:22px;color:var(--ink);margin-bottom:10px}
+.modal p{color:var(--ink-soft);font-size:14px;line-height:1.6;margin-bottom:20px}
+.modal-actions{display:flex;gap:10px}
+.modal-actions button{flex:1;padding:13px;border-radius:12px;border:none;font-weight:600}
+.modal-actions .cancel{background:var(--rule-soft);color:var(--ink-soft)}
+.modal-actions .danger{background:var(--grad-sunset);color:white}
+
+#admin-loading{display:flex;align-items:center;justify-content:center;min-height:100vh;color:var(--ink-mute);font-size:15px}
+
+@media (max-width:640px){
+  .admin-stats,.admin-stats.subs4{grid-template-columns:repeat(2,1fr)}
+  .stat-card .num{font-size:24px}
+  .user-row{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<div id="admin-loading">טוען לוח אדמין…</div>
+
+<div id="admin-app" style="display:none">
+  <header class="admin-header">
+    <div class="admin-header-inner">
+      <div>
+        <h1>לוח אדמין</h1>
+        <small id="admin-greeting">שלום</small>
+      </div>
+      <button class="logout-link" id="admin-logout">יציאה</button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <!-- Funnel -->
+    <h2 class="section-title">משפך — מצב לקוחות</h2>
+    <div class="admin-stats" id="admin-funnel">
+      <div class="stat-card"><div class="num" id="funnel-registered">—</div><small>נרשמו</small></div>
+      <div class="stat-card"><div class="num" id="funnel-started">—</div><small>התחילו</small></div>
+      <div class="stat-card"><div class="num" id="funnel-active">—</div><small>באמצע</small></div>
+      <div class="stat-card"><div class="num" id="funnel-abandoned">—</div><small>נטשו</small></div>
+      <div class="stat-card"><div class="num" id="funnel-submitted">—</div><small>סיימו</small></div>
+    </div>
+    <div id="funnel-dropoff"></div>
+
+    <!-- Live drafts -->
+    <h2 class="section-title">בתהליך מילוי — תשובות חיות</h2>
+    <div id="admin-drafts-list"></div>
+    <div id="admin-drafts-empty" class="admin-empty" style="display:none"><p>אין כרגע לקוחות בתהליך מילוי.</p></div>
+
+    <!-- Completed submissions (from Supabase, all users) -->
+    <h2 class="section-title">הגשות שהושלמו</h2>
+    <div class="admin-controls">
+      <input type="search" id="admin-search" class="text-input" placeholder="חיפוש לפי שם / אימייל / טלפון…">
+      <button class="btn-secondary" id="admin-export-all">📤 ייצא הכל</button>
+    </div>
+    <div id="admin-list"></div>
+    <div id="admin-empty" class="admin-empty" style="display:none"><p>אין עדיין הגשות שהושלמו.</p></div>
+
+    <!-- User management -->
+    <h2 class="section-title">משתמשים והרשאות</h2>
+    <div id="admin-users-list"></div>
+    <div id="admin-users-empty" class="admin-empty" style="display:none"><p>אין משתמשים להצגה.</p></div>
+  </main>
+</div>
+
+<!-- Confirmation modal -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <div class="modal-icon" id="modal-icon">⚠️</div>
+    <h3 id="modal-title">אישור</h3>
+    <p id="modal-text">בטוחים?</p>
+    <div class="modal-actions">
+      <button class="cancel" id="modal-cancel">ביטול</button>
+      <button class="danger" id="modal-confirm">אישור</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { createSupabaseClient } from './supabase-config.js';
+const sb = createSupabaseClient();
+
+/* ════════ Helpers ════════ */
+const $ = id => document.getElementById(id);
+function esc(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function toast(msg, error){ const t=$('toast'); t.textContent=msg; t.classList.toggle('error',!!error); t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800); }
+function confirmModal({icon='⚠️', title='אישור', text='', confirmLabel='אישור', cancelLabel='ביטול'}){
+  return new Promise((resolve)=>{
+    $('modal-icon').textContent=icon; $('modal-title').textContent=title; $('modal-text').textContent=text;
+    $('modal-confirm').textContent=confirmLabel; $('modal-cancel').textContent=cancelLabel;
+    const modal=$('modal'); modal.classList.add('show');
+    const cleanup=(v)=>{ modal.classList.remove('show'); $('modal-confirm').removeEventListener('click',onYes); $('modal-cancel').removeEventListener('click',onNo); modal.removeEventListener('click',onBd); resolve(v); };
+    const onYes=()=>cleanup(true), onNo=()=>cleanup(false), onBd=(e)=>{ if(e.target===modal) cleanup(false); };
+    $('modal-confirm').addEventListener('click',onYes); $('modal-cancel').addEventListener('click',onNo); modal.addEventListener('click',onBd);
+  });
+}
+function downloadFile(content, filename, mime){
+  const blob=new Blob([content],{type:mime}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),500);
+}
+function safeName(s){ return (s||'parent').replace(/[^֐-׿a-zA-Z0-9 ]/g,'').replace(/\s+/g,'_') || 'parent'; }
+function fmtDate(iso){ if(!iso) return ''; return new Date(iso).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+async function logAccess(action, targetUser, targetSubmission){
+  try { await sb.rpc('log_admin_access', { action, target_user: targetUser || null, target_submission: targetSubmission || null, meta: {} }); }
+  catch(e){ /* best-effort */ }
+}
+
+/* ════════ State ════════ */
+let me = null;
+let adminSubs = [];
+const expandedSubs = new Set();
+const expandedDrafts = new Set();
+let searchQ = '';
+
+/* ════════ Auth guard ════════ */
+async function guard(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(!session || !session.user){ location.replace('index.html'); return false; }
+  const { data: profile, error } = await sb.from('profiles').select('*').eq('id', session.user.id).single();
+  if(error || !profile || !profile.is_admin){
+    $('admin-loading').textContent = 'אין לך הרשאת גישה ללוח. מפנה…';
+    setTimeout(()=>location.replace('index.html'), 1500);
+    return false;
+  }
+  me = profile;
+  $('admin-greeting').textContent = 'שלום, ' + (profile.full_name || profile.email);
+  $('admin-loading').style.display = 'none';
+  $('admin-app').style.display = '';
+  return true;
+}
+
+/* ════════ Funnel ════════ */
+async function renderFunnel(){
+  const ids=['funnel-registered','funnel-started','funnel-active','funnel-abandoned','funnel-submitted'];
+  try {
+    const { data, error } = await sb.rpc('admin_funnel_overview');
+    if(error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if(row){
+      $('funnel-registered').textContent = row.registered ?? 0;
+      $('funnel-started').textContent    = row.started ?? 0;
+      $('funnel-active').textContent     = row.in_progress_active ?? 0;
+      $('funnel-abandoned').textContent  = row.abandoned ?? 0;
+      $('funnel-submitted').textContent  = row.submitted ?? 0;
+    }
+  } catch(e){ console.error('funnel:', e); ids.forEach(id=>{ const el=$(id); if(el) el.textContent='—'; }); }
+  try {
+    const { data } = await sb.rpc('admin_dropoff');
+    const el=$('funnel-dropoff'); const rows=(data||[]).slice(0,8);
+    el.innerHTML = rows.length
+      ? '<div class="submission-section" style="margin-top:10px"><h4>נקודות נשירה (לקוחות באמצע)</h4>'+
+        rows.map(r=>`<div class="submission-qa"><span class="q">${esc(r.last_qid)}</span><span class="a">${r.n}</span></div>`).join('')+'</div>'
+      : '';
+  } catch(e){ console.error('dropoff:', e); }
+}
+
+/* ════════ Completed submissions (cloud) ════════ */
+async function renderSubmissions(){
+  const listEl=$('admin-list'), emptyEl=$('admin-empty');
+  try {
+    const { data, error } = await sb.from('submissions_with_user').select('*').order('submitted_at',{ascending:false});
+    if(error) throw error;
+    adminSubs = data || [];
+  } catch(e){ console.error('submissions:', e); listEl.innerHTML=''; emptyEl.style.display=''; emptyEl.querySelector('p').textContent='שגיאה בטעינת הגשות.'; return; }
+
+  if(!adminSubs.length){ listEl.innerHTML=''; emptyEl.style.display=''; return; }
+  emptyEl.style.display='none';
+
+  const q=searchQ.trim().toLowerCase();
+  const filtered = q ? adminSubs.filter(r => (r.parent_name||'').toLowerCase().includes(q) || (r.parent_email||'').toLowerCase().includes(q) || (r.parent_phone||'').includes(q)) : adminSubs;
+  if(!filtered.length){ listEl.innerHTML='<div class="admin-empty"><p>לא נמצאו הגשות שתואמות לחיפוש.</p></div>'; return; }
+
+  listEl.innerHTML = filtered.map(r => renderSubmissionCard(r)).join('');
+  listEl.querySelectorAll('.submission-header').forEach(h=>{
+    h.addEventListener('click',()=>{
+      const id=h.dataset.id;
+      if(expandedSubs.has(id)){ expandedSubs.delete(id); } else { expandedSubs.add(id); const row=adminSubs.find(x=>x.id===id); if(row) logAccess('view_submission', row.user_id, row.id); }
+      renderSubmissions();
+    });
+  });
+  listEl.querySelectorAll('[data-action]').forEach(b=>{
+    b.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      const row=adminSubs.find(x=>x.id===b.dataset.id); if(!row) return;
+      const payload=row.answers||{};
+      if(b.dataset.action==='export'){
+        downloadFile(JSON.stringify(payload,null,2), `שאלון_${safeName(row.parent_name)}_${(row.submitted_at||'').slice(0,10)}.json`, 'application/json;charset=utf-8');
+        toast('✓ הורד');
+      } else if(b.dataset.action==='email'){
+        const sub=row.parent_email||''; const body=`שלום,\n\nמצורף סיכום השאלון של ${row.parent_name||''}.`;
+        window.location.href=`mailto:${encodeURIComponent(sub)}?subject=${encodeURIComponent('שאלון הורים')}&body=${encodeURIComponent(body)}`;
+      }
+    });
+  });
+}
+
+function renderSubmissionCard(row){
+  const a=row.answers||{}; const summary=a.summary||{};
+  const total=summary.total||row.questions_total||0;
+  const answered=(summary.answered!=null)?summary.answered:row.answers_count;
+  const completion=total?Math.round((answered/total)*100):0;
+  const name=row.parent_name||(a.user&&a.user.name)||'(ללא שם)';
+  const email=row.parent_email||(a.user&&a.user.email)||'';
+  const phone=row.parent_phone||'';
+  const expanded=expandedSubs.has(row.id);
+  let body='';
+  if(expanded){
+    let qa='';
+    (a.sections||[]).forEach(sec=>{
+      const items=(sec.items||[]).filter(it=>it.answer!=null && it.answer!=='' && !(Array.isArray(it.answer)&&it.answer.length===0));
+      if(!items.length) return;
+      qa+=`<div class="submission-section"><h4>${esc(sec.title)}</h4>`;
+      items.forEach(it=>{ const num=it.number!=null?`${it.number}. `:'• '; const ans=Array.isArray(it.answer)?it.answer.join(' · '):it.answer; qa+=`<div class="submission-qa"><div class="q">${num}${esc(it.question)}</div><div class="a">${esc(ans)}</div></div>`; });
+      qa+='</div>';
+    });
+    body=`<div class="submission-body">${qa||'<p style="opacity:.7">אין תשובות.</p>'}
+      <div class="submission-actions">
+        <button data-action="export" data-id="${row.id}">📄 הורד JSON</button>
+        <button data-action="email" data-id="${row.id}">📧 מייל</button>
+      </div></div>`;
+  }
+  return `<div class="submission-card ${expanded?'expanded':''}">
+    <div class="submission-header" data-id="${row.id}">
+      <div class="submission-info">
+        <div class="submission-name">${esc(name)}</div>
+        <div class="submission-meta">
+          <span>${esc(email)}</span>${phone?`<span>· ${esc(phone)}</span>`:''}
+          <span class="pill">${fmtDate(row.submitted_at)}</span>
+          <span class="pill ${completion===100?'complete':'partial'}">${answered}/${total} · ${completion}%</span>
+          ${row.duration_minutes?`<span class="pill">~${row.duration_minutes} דק׳</span>`:''}
+        </div>
+      </div>
+      <div class="submission-toggle">▼</div>
+    </div>${body}
+  </div>`;
+}
+
+/* ════════ Live drafts ════════ */
+async function renderDrafts(){
+  const listEl=$('admin-drafts-list'), emptyEl=$('admin-drafts-empty');
+  let rows=[];
+  try {
+    const { data, error } = await sb.from('drafts_with_user').select('*').eq('status','in_progress').order('last_active_at',{ascending:false});
+    if(error) throw error; rows=data||[];
+  } catch(e){ console.error('drafts:', e); listEl.innerHTML=''; emptyEl.style.display=''; emptyEl.querySelector('p').textContent='שגיאה בטעינת טיוטות.'; return; }
+  if(!rows.length){ listEl.innerHTML=''; emptyEl.style.display=''; return; }
+  emptyEl.style.display='none';
+  listEl.innerHTML = rows.map(d=>renderDraftCard(d)).join('');
+  listEl.querySelectorAll('.submission-header').forEach(h=>{
+    h.addEventListener('click',()=>{
+      const id=h.dataset.id;
+      if(expandedDrafts.has(id)){ expandedDrafts.delete(id); } else { expandedDrafts.add(id); logAccess('view_draft', id, null); }
+      renderDrafts();
+    });
+  });
+}
+function renderDraftCard(d){
+  const a=d.answers||{}; const summary=a.summary||{};
+  const total=summary.total||d.total_questions||0;
+  const answered=(summary.answered!=null)?summary.answered:d.answered_count;
+  const completion=total?Math.round((answered/total)*100):0;
+  const name=d.parent_name||(a.user&&a.user.name)||'(ללא שם)';
+  const email=d.parent_email||'';
+  const expanded=expandedDrafts.has(d.user_id);
+  let body='';
+  if(expanded){
+    let qa='';
+    (a.sections||[]).forEach(sec=>{
+      const items=(sec.items||[]).filter(it=>it.answer!=null && it.answer!=='' && !(Array.isArray(it.answer)&&it.answer.length===0));
+      if(!items.length) return;
+      qa+=`<div class="submission-section"><h4>${esc(sec.title)}</h4>`;
+      items.forEach(it=>{ const num=it.number!=null?`${it.number}. `:'• '; const ans=Array.isArray(it.answer)?it.answer.join(' · '):it.answer; qa+=`<div class="submission-qa"><div class="q">${num}${esc(it.question)}</div><div class="a">${esc(ans)}</div></div>`; });
+      qa+='</div>';
+    });
+    body=`<div class="submission-body">${qa||'<p style="opacity:.7;padding:8px">עדיין אין תשובות.</p>'}</div>`;
+  }
+  return `<div class="submission-card ${expanded?'expanded':''}">
+    <div class="submission-header" data-id="${d.user_id}">
+      <div class="submission-info">
+        <div class="submission-name">${esc(name)} <span class="pill partial">טיוטה</span></div>
+        <div class="submission-meta">
+          <span>${esc(email)}</span>
+          ${d.last_active_at?`<span>· פעיל: ${fmtDate(d.last_active_at)}</span>`:''}
+          <span class="pill ${completion===100?'complete':'partial'}">${answered}/${total} · ${completion}%</span>
+          ${d.last_qid?`<span class="pill">שאלה: ${esc(d.last_qid)}</span>`:''}
+        </div>
+      </div>
+      <div class="submission-toggle">▼</div>
+    </div>${body}
+  </div>`;
+}
+
+/* ════════ User management ════════ */
+async function renderUsers(){
+  const listEl=$('admin-users-list'), emptyEl=$('admin-users-empty');
+  let rows=[];
+  try {
+    const { data, error } = await sb.from('users_overview').select('*').order('created_at',{ascending:false});
+    if(error) throw error; rows=data||[];
+  } catch(e){ console.error('users:', e); listEl.innerHTML=''; emptyEl.style.display=''; emptyEl.querySelector('p').textContent='שגיאה בטעינת משתמשים.'; return; }
+  if(!rows.length){ listEl.innerHTML=''; emptyEl.style.display=''; return; }
+  emptyEl.style.display='none';
+
+  listEl.innerHTML = rows.map(u=>{
+    const isSelf = u.id===me.id;
+    const statusPill = u.draft_status==='submitted' ? '<span class="pill complete">סיים</span>'
+                     : u.draft_status==='in_progress' ? `<span class="pill partial">באמצע ${u.draft_answered_count||0}/${u.total_questions||0}</span>`
+                     : '<span class="pill">לא התחיל</span>';
+    const subs = u.submissions_count ? `<span class="pill">${u.submissions_count} הגשות</span>` : '';
+    const adminPill = u.is_admin ? '<span class="pill admin">אדמין</span>' : '';
+    const btn = isSelf
+      ? '<button disabled style="opacity:.45;cursor:default">אתה</button>'
+      : (u.is_admin
+          ? `<button class="remove" data-uid="${u.id}" data-make="false">הסר אדמין</button>`
+          : `<button class="make" data-uid="${u.id}" data-make="true">הפוך לאדמין</button>`);
+    return `<div class="user-row">
+      <div>
+        <div class="u-name">${esc(u.full_name||'(ללא שם)')} ${adminPill}</div>
+        <div class="u-meta"><span>${esc(u.email)}</span>${u.child_name?`<span>· ילד/ה: ${esc(u.child_name)}</span>`:''} ${statusPill} ${subs}</div>
+      </div>
+      <div class="u-actions">${btn}</div>
+    </div>`;
+  }).join('');
+
+  listEl.querySelectorAll('[data-uid]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const uid=b.dataset.uid, make=(b.dataset.make==='true');
+      const ok=await confirmModal({ icon: make?'🛡️':'⚠️', title: make?'הפיכה לאדמין':'הסרת הרשאת אדמין', text: make?'המשתמש יקבל גישה מלאה ללוח האדמין ולכל הנתונים. להמשיך?':'המשתמש יאבד את גישת האדמין. להמשיך?', confirmLabel: make?'כן, הפוך לאדמין':'כן, הסר', cancelLabel:'ביטול' });
+      if(!ok) return;
+      try {
+        const { error } = await sb.rpc('admin_set_admin', { target: uid, make_admin: make });
+        if(error) throw error;
+        toast(make?'✓ הוגדר כאדמין':'✓ הרשאת אדמין הוסרה');
+        renderUsers();
+      } catch(e){ console.error('set_admin:', e); toast('שגיאה: '+(e.message||e), true); }
+    });
+  });
+}
+
+/* ════════ Wiring ════════ */
+$('admin-logout').addEventListener('click', async ()=>{ await sb.auth.signOut(); location.replace('index.html'); });
+$('admin-search').addEventListener('input', (e)=>{ searchQ=e.target.value; renderSubmissions(); });
+$('admin-export-all').addEventListener('click', ()=>{
+  if(!adminSubs.length){ toast('אין הגשות לייצוא', true); return; }
+  downloadFile(JSON.stringify(adminSubs.map(r=>r.answers),null,2), `כל_ההגשות_${new Date().toISOString().slice(0,10)}.json`, 'application/json;charset=utf-8');
+  toast('✓ יוצא');
+});
+
+/* ════════ Init ════════ */
+(async ()=>{
+  if(await guard()){
+    renderFunnel(); renderSubmissions(); renderDrafts(); renderUsers();
+  }
+})();
+</script>
+</body>
+</html>
